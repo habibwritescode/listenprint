@@ -1,8 +1,12 @@
 import { createRootRouteWithContext, createRoute, createRouter } from '@tanstack/react-router'
 import type { QueryClient } from '@tanstack/react-query'
+import { ErrorFallback } from './components/ErrorFallback.tsx'
 import { queryClient } from './query-client.ts'
-import { RootLayout } from './routes/RootLayout.tsx'
+import { ArtistPage } from './routes/ArtistPage.tsx'
+import { DemoPage } from './routes/DemoPage.tsx'
+import { NotFoundPage } from './routes/NotFoundPage.tsx'
 import { RankingsPage } from './routes/RankingsPage.tsx'
+import { RootLayout } from './routes/RootLayout.tsx'
 
 export interface RouterContext {
   queryClient: QueryClient
@@ -10,6 +14,7 @@ export interface RouterContext {
 
 const rootRoute = createRootRouteWithContext<RouterContext>()({
   component: RootLayout,
+  notFoundComponent: NotFoundPage,
 })
 
 const rankingsRoute = createRoute({
@@ -18,9 +23,22 @@ const rankingsRoute = createRoute({
   component: RankingsPage,
 })
 
+const artistRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/artist/$artistId',
+  component: ArtistPage,
+})
+
+const demoRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/demo',
+  component: DemoPage,
+})
+
 export const router = createRouter({
-  routeTree: rootRoute.addChildren([rankingsRoute]),
+  routeTree: rootRoute.addChildren([rankingsRoute, artistRoute, demoRoute]),
   context: { queryClient },
+  defaultErrorComponent: ErrorFallback,
 })
 
 declare module '@tanstack/react-router' {

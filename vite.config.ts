@@ -18,6 +18,7 @@ export default defineConfig({
   test: {
     // Explicit include: the default glob would also collect old/test/*.test.js (node:test, not Vitest).
     include: ['src/**/*.test.{ts,tsx}'],
+    setupFiles: ['src/test/setup-jsdom.ts'],
     coverage: {
       provider: 'v8',
       // Explicit include so files no test imports still show up (at 0%) instead of vanishing.

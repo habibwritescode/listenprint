@@ -30,6 +30,7 @@ export default defineConfig({
         'src/library/**': { statements: 100, branches: 100, functions: 100, lines: 100 },
         'src/demo/random.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
         'src/demo/generate.ts': { statements: 98, branches: 98, functions: 100, lines: 100 },
+        'src/hooks/scroll-visibility.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
       },
     },
   },

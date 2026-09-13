@@ -24,9 +24,11 @@ export default defineConfig({
       include: ['src/**/*.{ts,tsx}'],
       exclude: ['src/**/*.test.{ts,tsx}', 'src/test/**'],
       reporter: ['text', 'html'],
-      // Thresholds only on pure-logic directories, set from measured coverage (see tasks/SPEC-ci.md).
+      // Thresholds only on pure-logic files, set from measured coverage; never lowered to get green.
       thresholds: {
         'src/library/**': { statements: 100, branches: 100, functions: 100, lines: 100 },
+        'src/demo/random.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+        'src/demo/generate.ts': { statements: 98, branches: 98, functions: 100, lines: 100 },
       },
     },
   },

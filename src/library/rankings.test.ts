@@ -9,7 +9,6 @@ import {
   rankArtists,
 } from './rankings.ts'
 
-// Ported from old/test/rankings.test.js, with competition ranks added to the assertions.
 const artistA = makeArtist({ id: 'artist-a', name: 'Artist A' })
 const artistB = makeArtist({ id: 'artist-b', name: 'Artist B' })
 const artistC = makeArtist({ id: 'artist-c', name: 'Artist C' })

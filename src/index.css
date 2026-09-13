@@ -1,8 +1,7 @@
 @import "tailwindcss";
 
 /*
- * Design tokens, seeded from the previous app's palette (old/src/styles.css).
- * Tailwind's default color palette is cleared so components can only use these
+ * Tailwind's default color palette is cleared so components can only use these tokens
  * (plus built-ins like `transparent` and `current`); raw colors belong in this file only.
  */
 @theme {

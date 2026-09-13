@@ -7,13 +7,11 @@ function nextId(prefix: string): string {
   return `${prefix}-${sequence}`
 }
 
-/** An artist with a unique id; pass only the fields a test cares about. */
 export function makeArtist(overrides: Partial<ArtistRef> = {}): ArtistRef {
   const id = overrides.id ?? nextId('artist')
   return { id, name: `Artist ${id}`, ...overrides }
 }
 
-/** A track with a unique id and one generated artist; pass only the fields a test cares about. */
 export function makeTrack(overrides: Partial<LibraryTrack> = {}): LibraryTrack {
   const id = overrides.id ?? nextId('track')
   return {

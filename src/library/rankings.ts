@@ -28,7 +28,6 @@ export function rankArtists(tracks: readonly LibraryTrack[], mode: RankingMode):
   const byArtistId = new Map<string, Omit<ArtistRanking, 'rank'>>()
 
   for (const track of tracks) {
-    // An artist credited more than once on the same track still counts once for it.
     const countedOnTrack = new Set<string>()
     for (const artist of countedArtists(track, mode)) {
       if (countedOnTrack.has(artist.id)) continue
@@ -46,7 +45,6 @@ export function rankArtists(tracks: readonly LibraryTrack[], mode: RankingMode):
 
   const sorted = [...byArtistId.values()].sort(compareRankings)
 
-  // Competition ranking: an entry with the same count as the one before it shares that rank.
   let rank = 0
   return sorted.map((entry, index) => {
     if (index === 0 || entry.count !== sorted[index - 1].count) rank = index + 1

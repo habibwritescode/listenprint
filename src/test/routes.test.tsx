@@ -1,11 +1,17 @@
 // @vitest-environment jsdom
 import { cleanup, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { rankArtists } from '../library/rankings.ts'
-import type { RankingMode } from '../library/types.ts'
+import type { ArtistRanking, RankingMode } from '../library/types.ts'
 import type { AppRouter } from '../router.ts'
 import { renderApp, testLibrary } from './render-app.ts'
+
+// The demo pages are lazy route components. Loaded cold while another test file is transforming, the
+// first test here once missed findBy's 1s timeout, so the chunks are loaded before any test starts.
+beforeAll(async () => {
+  await Promise.all([import('../routes/DemoPage.tsx'), import('../routes/DemoArtistPage.tsx')])
+})
 
 afterEach(cleanup)
 
@@ -27,6 +33,17 @@ function statValue(label: string) {
 
 function radio(name: string) {
   return screen.getByRole<HTMLInputElement>('radio', { name })
+}
+
+function featuredOnlyArtist() {
+  const primaryIds = new Set(rankArtists(testLibrary.tracks, 'primary').map((ranking) => ranking.artist.id))
+  const ranking = rankArtists(testLibrary.tracks, 'all').find((candidate) => !primaryIds.has(candidate.artist.id))
+  if (!ranking) throw new Error('test library has no featured-only artist')
+  return ranking
+}
+
+function headerSummary({ rank, count }: ArtistRanking) {
+  return `#${rank} · ${countFormat.format(count)} liked ${count === 1 ? 'song' : 'songs'}`
 }
 
 function topRowName(mode: RankingMode) {
@@ -120,6 +137,52 @@ describe('/demo/artist/$artistId', () => {
     renderApp('/demo/artist/does-not-exist')
 
     expect(await screen.findByRole('heading', { name: 'Page not found' })).toBeDefined()
+  })
+
+  it.each(['all', 'primary'] as const)('shows the rank, count, and counted tracks for %s mode', async (mode) => {
+    const ranking = rankArtists(testLibrary.tracks, mode)[1]
+
+    renderApp(`/demo/artist/${ranking.artist.id}${mode === 'primary' ? '?mode=primary' : ''}`)
+
+    expect(await screen.findByText(headerSummary(ranking))).toBeDefined()
+    const list = screen.getByRole('list', { name: `Liked songs by ${ranking.artist.name}` })
+    expect(list.querySelector('li')?.getAttribute('aria-setsize')).toBe(String(ranking.count))
+  })
+
+  it('explains that a featured-only artist is not counted in primary mode and switches to all mode', async () => {
+    const user = userEvent.setup()
+    const ranking = featuredOnlyArtist()
+    const { router } = renderApp(`/demo/artist/${ranking.artist.id}?mode=primary`)
+
+    expect(await screen.findByText(/only credited as a featured artist/)).toBeDefined()
+    expect(screen.queryByRole('list', { name: /Liked songs by/ })).toBeNull()
+
+    await user.click(screen.getByRole('link', { name: 'Count every credited artist' }))
+
+    expect(await screen.findByText(headerSummary(ranking))).toBeDefined()
+    expect(router.state.location.pathname).toBe(`/demo/artist/${ranking.artist.id}`)
+    expect(router.state.location.searchStr).toBe('')
+  })
+})
+
+describe('list to detail navigation', () => {
+  it('keeps primary mode from the list to the artist page and back', async () => {
+    const user = userEvent.setup()
+    const [top] = rankArtists(testLibrary.tracks, 'primary')
+    const { router } = renderApp('/demo?mode=primary')
+
+    await user.click(await screen.findByRole('link', { name: topRowName('primary') }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: top.artist.name })).toBeDefined()
+    expect(screen.getByText(headerSummary(top))).toBeDefined()
+    expect(router.state.location.pathname).toBe(`/demo/artist/${top.artist.id}`)
+    expect(router.state.location.searchStr).toBe('?mode=primary')
+
+    await user.click(screen.getByRole('link', { name: 'Back to rankings' }))
+
+    expect(await screen.findByRole('heading', { name: 'Demo library' })).toBeDefined()
+    expect(router.state.location.pathname).toBe('/demo')
+    expect(router.state.location.searchStr).toBe('?mode=primary')
   })
 })
 

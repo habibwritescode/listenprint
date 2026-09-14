@@ -5,6 +5,7 @@ import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { rankArtists } from '../library/rankings.ts'
 import type { ArtistRanking, RankingMode } from '../library/types.ts'
 import type { AppRouter } from '../router.ts'
+import { expectNoAxeViolations } from './axe.ts'
 import { renderApp, testLibrary } from './render-app.ts'
 
 // The demo pages are lazy route components. Loaded cold while another test file is transforming, the
@@ -186,12 +187,55 @@ describe('list to detail navigation', () => {
   })
 })
 
-describe('existing routes', () => {
-  it('still renders the home page', async () => {
-    renderApp('/')
+describe('/', () => {
+  it('introduces the app and opens the demo from "Try the demo"', async () => {
+    const user = userEvent.setup()
+    const { router } = renderApp('/')
 
-    expect(await screen.findByRole('heading', { name: 'Your artist rankings' })).toBeDefined()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Your artist rankings' })).toBeDefined()
+    const tryDemo = screen.getByRole('link', { name: 'Try the demo' })
+    expect(tryDemo.getAttribute('href')).toBe('/demo')
+
+    await user.click(tryDemo)
+
+    expect(await screen.findByRole('heading', { name: 'Demo library' })).toBeDefined()
+    expect(router.state.location.pathname).toBe('/demo')
   })
+})
+
+describe('accessibility', () => {
+  it('has no axe violations on the home page', async () => {
+    const { container } = renderApp('/')
+    await screen.findByRole('link', { name: 'Try the demo' })
+
+    await expectNoAxeViolations(container)
+  })
+
+  it.each(['/demo', '/demo?mode=primary'])('has no axe violations on the ranked list at %s', async (url) => {
+    const { container } = renderApp(url)
+    await screen.findByRole('list', { name: 'Artists ranked by liked songs' })
+
+    await expectNoAxeViolations(container)
+  })
+
+  it('has no axe violations on an artist page', async () => {
+    const [top] = rankArtists(testLibrary.tracks, 'all')
+    const { container } = renderApp(`/demo/artist/${top.artist.id}`)
+    await screen.findByRole('list', { name: `Liked songs by ${top.artist.name}` })
+
+    await expectNoAxeViolations(container)
+  })
+
+  it('has no axe violations on an artist page that is not counted in the current mode', async () => {
+    const { artist } = featuredOnlyArtist()
+    const { container } = renderApp(`/demo/artist/${artist.id}?mode=primary`)
+    await screen.findByRole('link', { name: 'Count every credited artist' })
+
+    await expectNoAxeViolations(container)
+  })
+})
+
+describe('existing routes', () => {
 
   it('still renders the not-found page for an unknown path', async () => {
     renderApp('/no-such-page')

@@ -4,22 +4,43 @@ import {
   createRouter,
   lazyRouteComponent,
   notFound,
+  redirect,
   stripSearchParams,
 } from '@tanstack/react-router'
 import type { RouterHistory, SearchSchemaInput } from '@tanstack/react-router'
 import type { QueryClient } from '@tanstack/react-query'
+import type { AuthSession } from './auth/session.ts'
 import { ErrorFallback } from './components/ErrorFallback.tsx'
 import { demoLibraryQueryOptions } from './demo/demo-library-query.ts'
 import { DEFAULT_RANKING_MODE, artistTracks, isRankingMode } from './library/rankings.ts'
 import type { RankingMode } from './library/types.ts'
 import { ArtistPage } from './routes/ArtistPage.tsx'
+import { CallbackPending } from './routes/CallbackPending.tsx'
 import { DemoPagePending } from './routes/DemoPagePending.tsx'
 import { NotFoundPage } from './routes/NotFoundPage.tsx'
 import { RankingsPage } from './routes/RankingsPage.tsx'
 import { RootLayout } from './routes/RootLayout.tsx'
+import { parseSearch, stringifySearch } from './search-params.ts'
 
 export interface RouterContext {
   queryClient: QueryClient
+  auth: AuthSession
+}
+
+interface CallbackSearch {
+  code?: string
+  state?: string
+  error?: string
+}
+
+// Lossless search parsing (search-params.ts) can still turn a short all-digit value into a number, and
+// String() restores its exact text.
+function searchText(value: unknown): string | undefined {
+  return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' ? String(value) : undefined
+}
+
+function validateCallbackSearch(search: Record<string, unknown>): CallbackSearch {
+  return { code: searchText(search.code), state: searchText(search.state), error: searchText(search.error) }
 }
 
 interface RankingSearch {
@@ -76,18 +97,36 @@ const demoArtistRoute = createRoute({
   pendingComponent: DemoPagePending,
 })
 
-const routeTree = rootRoute.addChildren([rankingsRoute, artistRoute, demoRoute, demoArtistRoute])
+// Spotify's redirect back after sign-in. Completion happens in the loader, then the URL is replaced so the
+// spent code never stays in history.
+const callbackRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/callback',
+  validateSearch: validateCallbackSearch,
+  loaderDeps: ({ search }) => search,
+  loader: async ({ context, deps }) => {
+    await context.auth.completeSignIn(deps)
+    throw redirect({ to: '/', replace: true })
+  },
+  pendingComponent: CallbackPending,
+  pendingMs: 0,
+})
+
+const routeTree = rootRoute.addChildren([rankingsRoute, artistRoute, demoRoute, demoArtistRoute, callbackRoute])
 
 interface AppRouterOptions {
   queryClient: QueryClient
+  auth: AuthSession
   history?: RouterHistory
 }
 
-export function createAppRouter({ queryClient, history }: AppRouterOptions) {
+export function createAppRouter({ queryClient, auth, history }: AppRouterOptions) {
   return createRouter({
     routeTree,
     history,
-    context: { queryClient },
+    context: { queryClient, auth },
+    parseSearch,
+    stringifySearch,
     defaultErrorComponent: ErrorFallback,
     scrollRestoration: true,
   })

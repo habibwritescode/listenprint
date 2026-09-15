@@ -32,6 +32,7 @@ export default defineConfig({
         'src/demo/generate.ts': { statements: 98, branches: 98, functions: 100, lines: 100 },
         'src/hooks/scroll-visibility.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
         'src/hooks/roving-focus.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+        'src/auth/**': { statements: 100, branches: 100, functions: 100, lines: 100 },
       },
     },
   },

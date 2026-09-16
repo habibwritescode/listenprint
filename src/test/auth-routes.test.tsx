@@ -19,7 +19,7 @@ describe('/callback', () => {
 
     const { router } = renderApp(`/callback?code=test-code&state=${returnedState}`, { auth: session })
 
-    expect(await screen.findByRole('heading', { name: 'Your artist rankings' })).toBeDefined()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Connected as Test Listener.' })).toBeDefined()
     expect(router.state.location.pathname).toBe('/')
     expect(router.state.location.searchStr).toBe('')
     // Replaced, not pushed: Back must not return to a spent code.
@@ -42,8 +42,8 @@ describe('/callback', () => {
     const { session, returnedState } = await returnFromSpotify()
     const { router } = renderApp(`/callback?code=test-code&state=${returnedState}`, { auth: session })
 
-    const status = await screen.findByRole('status')
-    expect(status.textContent).toBe('Connecting to Spotify…')
+    const status = await screen.findByRole('status', { name: 'Connecting to Spotify…' })
+    expect(status.textContent).toContain('your library hasn’t been read yet')
 
     release()
     await waitFor(() => expect(router.state.location.pathname).toBe('/'))

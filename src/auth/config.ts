@@ -16,3 +16,14 @@ export const CALLBACK_PATH = '/callback'
 export function redirectUri(origin: string): string {
   return `${origin}${CALLBACK_PATH}`
 }
+
+/**
+ * The same page on 127.0.0.1 when it's open on localhost, where a sign-in could never come back: Spotify no longer
+ * accepts localhost redirect URIs. `null` everywhere else.
+ */
+export function loopbackUrl(currentUrl: string): string | null {
+  const url = new URL(currentUrl)
+  if (url.hostname !== 'localhost') return null
+  url.hostname = '127.0.0.1'
+  return url.href
+}

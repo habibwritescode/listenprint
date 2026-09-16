@@ -1,6 +1,7 @@
 import { Outlet } from '@tanstack/react-router'
 import { BackToTopButton } from '../components/BackToTopButton.tsx'
 import { SiteHeader } from '../components/SiteHeader.tsx'
+import { HeaderIdentity } from '../components/auth/HeaderIdentity.tsx'
 
 export function RootLayout() {
   return (
@@ -12,7 +13,9 @@ export function RootLayout() {
         Skip to content
       </a>
 
-      <SiteHeader />
+      <SiteHeader>
+        <HeaderIdentity />
+      </SiteHeader>
 
       <main id="content" tabIndex={-1} className="flex-1 py-8 outline-none">
         <Outlet />

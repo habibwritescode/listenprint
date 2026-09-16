@@ -17,13 +17,9 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
     return { hasError: true, error }
   }
 
-  reset = () => {
-    this.setState({ hasError: false })
-  }
-
   render() {
     if (this.state.hasError) {
-      return <ErrorFallback error={this.state.error} reset={this.reset} />
+      return <ErrorFallback error={this.state.error} />
     }
     return this.props.children
   }

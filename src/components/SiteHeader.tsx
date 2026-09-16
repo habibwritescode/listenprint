@@ -1,10 +1,12 @@
 import { Link } from '@tanstack/react-router'
 import { useRef } from 'react'
+import type { ReactNode } from 'react'
 import { useHeaderScrollState } from '../hooks/useScrollVisibility.ts'
 
 const navLinkClass = 'text-muted transition-colors hover:text-text data-[status=active]:text-bright-accent'
 
-export function SiteHeader() {
+/** `children` sit at the header's trailing edge, for route-specific controls. */
+export function SiteHeader({ children }: { children?: ReactNode }) {
   const headerRef = useRef<HTMLElement>(null)
   const { hidden, scrolled } = useHeaderScrollState(headerRef)
 
@@ -18,6 +20,7 @@ export function SiteHeader() {
       <Link to="/" className="text-lg font-bold tracking-tight text-text">
         Listenprint
       </Link>
+      {children}
       <nav aria-label="Primary">
         <ul className="flex gap-6 text-sm font-medium">
           <li>

@@ -20,6 +20,7 @@ import { DemoPagePending } from './routes/DemoPagePending.tsx'
 import { NotFoundPage } from './routes/NotFoundPage.tsx'
 import { RankingsPage } from './routes/RankingsPage.tsx'
 import { RootLayout } from './routes/RootLayout.tsx'
+import { UnknownDemoArtist } from './routes/UnknownDemoArtist.tsx'
 import { parseSearch, stringifySearch } from './search-params.ts'
 
 export interface RouterContext {
@@ -95,6 +96,7 @@ const demoArtistRoute = createRoute({
   },
   component: lazyRouteComponent(() => import('./routes/DemoArtistPage.tsx'), 'DemoArtistPage'),
   pendingComponent: DemoPagePending,
+  notFoundComponent: UnknownDemoArtist,
 })
 
 // Spotify's redirect back after sign-in. Completion happens in the loader, then the URL is replaced so the

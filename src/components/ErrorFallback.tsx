@@ -1,38 +1,58 @@
+import { useState } from 'react'
+import { Notice } from './Notice.tsx'
+import { ghostActionClass, primaryActionClass } from './action-styles.ts'
+
 interface ErrorFallbackProps {
   error: unknown
-  reset: () => void
 }
 
-// Shared by the router's defaultErrorComponent and AppErrorBoundary. It can render
-// outside the router, so it uses a plain anchor rather than the router's <Link>.
-export function ErrorFallback({ error, reset }: ErrorFallbackProps) {
-  const message = error instanceof Error ? error.message : String(error)
+function errorSummary(error: unknown): string {
+  return error instanceof Error ? `${error.name}: ${error.message}` : String(error)
+}
+
+// The path only: a callback URL's query string carries a sign-in code.
+function errorDetails(error: unknown): string {
+  const trace = error instanceof Error && error.stack ? error.stack : errorSummary(error)
+  return `${trace}\n\nPage: ${window.location.pathname}`
+}
+
+type CopyResult = 'copied' | 'failed' | null
+
+// Shared by the router's defaultErrorComponent and AppErrorBoundary. It can render outside the router, so it uses
+// plain anchors rather than the router's <Link>.
+export function ErrorFallback({ error }: ErrorFallbackProps) {
+  const [copyResult, setCopyResult] = useState<CopyResult>(null)
+
+  const copyDetails = () => {
+    navigator.clipboard.writeText(errorDetails(error)).then(
+      () => setCopyResult('copied'),
+      () => setCopyResult('failed'),
+    )
+  }
 
   return (
-    <section role="alert" aria-labelledby="error-title" className="mx-auto max-w-xl px-4 py-16">
-      <h1 id="error-title" className="text-3xl font-bold tracking-tight">
-        Something went wrong
-      </h1>
-      <p className="mt-2 text-muted">
-        Listenprint hit an unexpected error. Try again, or head back to the start.
+    <Notice
+      align="start"
+      tone="attention"
+      kicker="Something broke"
+      title="Listenprint hit an error and stopped."
+      body="This is a bug in the app, not a problem with your library or your account. Listenprint has no server, so reloading starts clean and nothing is left in a bad state on Spotify’s side."
+      body2="If it keeps happening, the details below are what a bug report needs."
+      detail={errorSummary(error)}
+    >
+      <button type="button" onClick={() => window.location.reload()} className={primaryActionClass}>
+        Reload the app
+      </button>
+      <button type="button" onClick={copyDetails} className={ghostActionClass}>
+        Copy error details
+      </button>
+      <a href="/demo" className={ghostActionClass}>
+        Open the demo
+      </a>
+      <p role="status" className="basis-full text-sm text-subtle empty:hidden">
+        {copyResult === 'copied' && 'Error details copied.'}
+        {copyResult === 'failed' && 'Couldn’t copy. Select the error text above instead.'}
       </p>
-      {import.meta.env.DEV && (
-        <pre className="mt-4 overflow-x-auto rounded-md border border-border bg-surface p-3 text-sm text-subtle">
-          {message}
-        </pre>
-      )}
-      <div className="mt-6 flex flex-wrap items-center gap-4">
-        <button
-          type="button"
-          onClick={reset}
-          className="rounded-sm bg-accent px-4 py-2 font-semibold text-on-accent hover:bg-bright-accent"
-        >
-          Try again
-        </button>
-        <a href="/" className="font-medium text-bright-accent hover:text-bright-accent">
-          Back to rankings
-        </a>
-      </div>
-    </section>
+    </Notice>
   )
 }

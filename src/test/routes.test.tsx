@@ -134,10 +134,16 @@ describe('/demo/artist/$artistId', () => {
     expect(await screen.findByRole('heading', { level: 1, name: artist.name })).toBeDefined()
   })
 
-  it('renders the not-found page for an artist that is not in the demo library', async () => {
-    renderApp('/demo/artist/does-not-exist')
+  // Distinct from a 404: the route exists, the artist doesn't.
+  it('explains when the artist is not in the sample library', async () => {
+    const { container } = renderApp('/demo/artist/does-not-exist?mode=primary')
 
-    expect(await screen.findByRole('heading', { name: 'Page not found' })).toBeDefined()
+    const title = 'That artist isn’t in the sample library.'
+    expect(await screen.findByRole('heading', { level: 1, name: title })).toBeDefined()
+    expect(screen.getByText('Not in this library').dataset.tone).toBe('neutral')
+    expect(screen.getByText('/demo/artist/does-not-exist')).toBeDefined()
+    expect(screen.getByRole('link', { name: 'Back to ranking' }).getAttribute('href')).toBe('/demo?mode=primary')
+    await expectNoAxeViolations(container)
   })
 
   it.each(['all', 'primary'] as const)('shows the rank, count, and counted tracks for %s mode', async (mode) => {
@@ -185,15 +191,19 @@ describe('list to detail navigation', () => {
     expect(router.state.location.pathname).toBe('/demo')
     expect(router.state.location.searchStr).toBe('?mode=primary')
   })
+
 })
 
 describe('/', () => {
-  it('introduces the app and opens the demo from "Try the demo"', async () => {
+  // jsdom serves tests from localhost, where Spotify refuses the redirect, so home points to 127.0.0.1 instead.
+  it('sends localhost to 127.0.0.1, and opens the demo from "Continue to demo"', async () => {
     const user = userEvent.setup()
     const { router } = renderApp('/')
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Your artist rankings' })).toBeDefined()
-    const tryDemo = screen.getByRole('link', { name: 'Try the demo' })
+    expect(await screen.findByRole('heading', { level: 1, name: 'Open this app on 127.0.0.1.' })).toBeDefined()
+    expect(screen.queryByRole('button', { name: 'Connect Spotify' })).toBeNull()
+    expect(screen.getByRole('link', { name: 'Open on 127.0.0.1' }).getAttribute('href')).toBe('http://127.0.0.1:3000/')
+    const tryDemo = screen.getByRole('link', { name: 'Continue to demo' })
     expect(tryDemo.getAttribute('href')).toBe('/demo')
 
     await user.click(tryDemo)
@@ -206,7 +216,7 @@ describe('/', () => {
 describe('accessibility', () => {
   it('has no axe violations on the home page', async () => {
     const { container } = renderApp('/')
-    await screen.findByRole('link', { name: 'Try the demo' })
+    await screen.findByRole('link', { name: 'Continue to demo' })
 
     await expectNoAxeViolations(container)
   })
@@ -237,9 +247,14 @@ describe('accessibility', () => {
 
 describe('existing routes', () => {
 
-  it('still renders the not-found page for an unknown path', async () => {
-    renderApp('/no-such-page')
+  it('renders the not-found page for an unknown path', async () => {
+    const { container } = renderApp('/artists/top?mode=primary')
 
-    expect(await screen.findByRole('heading', { name: 'Page not found' })).toBeDefined()
+    expect(await screen.findByRole('heading', { level: 1, name: 'There’s no page at this address.' })).toBeDefined()
+    expect(screen.getByText('404').dataset.tone).toBe('neutral')
+    expect(screen.getByText('/artists/top')).toBeDefined()
+    expect(screen.getByRole('link', { name: 'Go to the home page' }).getAttribute('href')).toBe('/')
+    expect(screen.getByRole('link', { name: 'Open the demo' }).getAttribute('href')).toBe('/demo')
+    await expectNoAxeViolations(container)
   })
 })

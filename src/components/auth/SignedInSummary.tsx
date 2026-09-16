@@ -1,19 +1,20 @@
 import { Link } from '@tanstack/react-router'
-import { secondaryActionClass } from '../action-styles.ts'
+import { Notice } from '../Notice.tsx'
+import { softActionClass } from '../action-styles.ts'
 
-export function SignedInSummary({ displayName, onSignOut }: { displayName: string; onSignOut: () => void }) {
+// Sign out lives in the header, where it stays once the live ranking replaces this notice.
+export function SignedInSummary({ displayName }: { displayName: string }) {
   return (
-    <div className="mt-6 grid gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-surface px-4 py-3">
-        <p className="font-semibold">{`Connected as ${displayName}`}</p>
-        <button type="button" onClick={onSignOut} className={secondaryActionClass}>
-          Sign out
-        </button>
-      </div>
-      <p className="text-muted">Loading your liked songs comes next. Until then, explore the demo library.</p>
-      <Link to="/demo" className={`${secondaryActionClass} justify-self-start`}>
-        Explore the demo
+    <Notice
+      align="start"
+      tone="neutral"
+      kicker="Ready"
+      title={`Connected as ${displayName}.`}
+      body="Your live ranking arrives in a later release, so nothing from your library has been read yet. Until then, the demo shows everything Listenprint does on a 10,000-track sample library."
+    >
+      <Link to="/demo" className={softActionClass}>
+        Try the demo
       </Link>
-    </div>
+    </Notice>
   )
 }

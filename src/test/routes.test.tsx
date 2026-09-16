@@ -2,7 +2,7 @@
 import { cleanup, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
-import { concentration, roundedPercents, sortRankings } from '../library/presentation.ts'
+import { concentration, ordinal, roundedPercents, sortRankings } from '../library/presentation.ts'
 import { rankArtists } from '../library/rankings.ts'
 import type { ArtistRanking, RankingMode } from '../library/types.ts'
 import type { AppRouter } from '../router.ts'
@@ -44,8 +44,11 @@ function featuredOnlyArtist() {
   return ranking
 }
 
-function headerSummary({ rank, count }: ArtistRanking) {
-  return `#${rank} · ${countFormat.format(count)} liked ${count === 1 ? 'song' : 'songs'}`
+function sampleKicker(ranking: ArtistRanking, mode: RankingMode) {
+  const rankings = rankArtists(testLibrary.tracks, mode)
+  const tied = rankings.filter((candidate) => candidate.rank === ranking.rank).length > 1
+  const place = `${tied ? 'Tied' : 'Ranked'} ${ordinal(ranking.rank)}`
+  return `Sample library · ${place} of ${countFormat.format(rankings.length)}`
 }
 
 function topRowName(mode: RankingMode) {
@@ -205,7 +208,11 @@ describe('/demo/artist/$artistId', () => {
 
     renderApp(`/demo/artist/${ranking.artist.id}${mode === 'primary' ? '?mode=primary' : ''}`)
 
-    expect(await screen.findByText(headerSummary(ranking))).toBeDefined()
+    expect(await screen.findByText(sampleKicker(ranking, mode))).toBeDefined()
+    expect(screen.getByText('Sample artist — no Spotify page')).toBeDefined()
+    expect(screen.getByText('Saved tracks', { selector: 'dt' }).nextElementSibling?.textContent).toBe(
+      countFormat.format(ranking.count),
+    )
     const list = screen.getByRole('list', { name: `Liked songs by ${ranking.artist.name}` })
     expect(list.querySelector('li')?.getAttribute('aria-setsize')).toBe(String(ranking.count))
   })
@@ -215,12 +222,15 @@ describe('/demo/artist/$artistId', () => {
     const ranking = featuredOnlyArtist()
     const { router } = renderApp(`/demo/artist/${ranking.artist.id}?mode=primary`)
 
-    expect(await screen.findByText(/only credited as a featured artist/)).toBeDefined()
+    expect(await screen.findByText('Not ranked while counting primary artists only')).toBeDefined()
+    const cardTitle = 'Nothing to show in “primary artist only”'
+    expect(screen.getByRole('heading', { level: 2, name: cardTitle })).toBeDefined()
     expect(screen.queryByRole('list', { name: /Liked songs by/ })).toBeNull()
+    expect(screen.queryByText('Saved tracks', { selector: 'dt' })).toBeNull()
 
-    await user.click(screen.getByRole('link', { name: 'Count every credited artist' }))
+    await user.click(screen.getByRole('link', { name: 'Switch to all artists' }))
 
-    expect(await screen.findByText(headerSummary(ranking))).toBeDefined()
+    expect(await screen.findByText(sampleKicker(ranking, 'all'))).toBeDefined()
     expect(router.state.location.pathname).toBe(`/demo/artist/${ranking.artist.id}`)
     expect(router.state.location.searchStr).toBe('')
   })
@@ -235,7 +245,7 @@ describe('list to detail navigation', () => {
     await user.click(await screen.findByRole('link', { name: topRowName('primary') }))
 
     expect(await screen.findByRole('heading', { level: 1, name: top.artist.name })).toBeDefined()
-    expect(screen.getByText(headerSummary(top))).toBeDefined()
+    expect(screen.getByText(sampleKicker(top, 'primary'))).toBeDefined()
     expect(router.state.location.pathname).toBe(`/demo/artist/${top.artist.id}`)
     expect(router.state.location.searchStr).toBe('?mode=primary')
 
@@ -309,7 +319,7 @@ describe('accessibility', () => {
   it('has no axe violations on an artist page that is not counted in the current mode', async () => {
     const { artist } = featuredOnlyArtist()
     const { container } = renderApp(`/demo/artist/${artist.id}?mode=primary`)
-    await screen.findByRole('link', { name: 'Count every credited artist' })
+    await screen.findByRole('link', { name: 'Switch to all artists' })
 
     await expectNoAxeViolations(container)
   })

@@ -4,7 +4,11 @@ import { afterEach, describe, expect, it } from 'vitest'
 import type { ArtistRanking, ArtistRef } from '../../library/types.ts'
 import { makeArtist, makeTrack } from '../../test/factories.ts'
 import { renderWithRouter } from '../../test/render-with-router.ts'
+import { expectNoAxeViolations } from '../../test/axe.ts'
 import { ArtistHeader } from './ArtistHeader.tsx'
+import { ArtistStats } from './ArtistStats.tsx'
+import { FeaturedOnlyNotice } from './FeaturedOnlyNotice.tsx'
+import { artistKicker, noSpotifyLinkNote } from './artist-format.ts'
 import { ArtistTrackList } from './ArtistTrackList.tsx'
 
 const TRACK_ROW_HEIGHT = 75
@@ -27,47 +31,96 @@ function positions() {
   return screen.getAllByRole('listitem').map((item) => Number(item.getAttribute('aria-posinset')))
 }
 
+describe('artistKicker', () => {
+  const artist = makeArtist({ name: 'Pale Oxbow' })
+
+  it('places the artist in the library, naming the library when given', () => {
+    const ranking = rankingFor(artist, 1, 3)
+    expect(artistKicker({ ranking, tied: false, artistCount: 1_412, library: 'Sample library' })).toBe(
+      'Sample library · Ranked 1st of 1,412',
+    )
+    expect(artistKicker({ ranking: rankingFor(artist, 2, 3), tied: true, artistCount: 30 })).toBe('Tied 2nd of 30')
+  })
+
+  it('says why an artist without a ranking in this mode has none', () => {
+    expect(artistKicker({ ranking: null, tied: false, artistCount: 30 })).toBe(
+      'Not ranked while counting primary artists only',
+    )
+  })
+})
+
+describe('noSpotifyLinkNote', () => {
+  it('explains a missing link for sample and local-file artists', () => {
+    expect(noSpotifyLinkNote(makeArtist({ id: 'seed-1' }), 'demo')).toBe('Sample artist — no Spotify page')
+    expect(noSpotifyLinkNote(makeArtist({ id: 'local:Garage Demos' }), 'spotify')).toBe(
+      'No Spotify page — local files only',
+    )
+  })
+})
+
 describe('ArtistHeader', () => {
   const artist = makeArtist({ id: 'artist-a', name: 'Pale Oxbow' })
 
-  it('shows the name, rank, and liked song count', async () => {
-    renderWithRouter(<ArtistHeader artist={artist} ranking={rankingFor(artist, 3, 2)} spotifyUrl={null} />)
+  it('shows the kicker and the name', async () => {
+    renderWithRouter(<ArtistHeader artist={artist} kicker="Tied 2nd of 30" spotifyUrl={null} noLinkNote="No link" />)
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Pale Oxbow' })).toBeDefined()
-    expect(screen.getByText('#3 · 2 liked songs')).toBeDefined()
+    expect(screen.getByText('Tied 2nd of 30')).toBeDefined()
   })
 
-  it('uses the singular for one liked song', async () => {
-    renderWithRouter(<ArtistHeader artist={artist} ranking={rankingFor(artist, 12, 1)} spotifyUrl={null} />)
-
-    expect(await screen.findByText('#12 · 1 liked song')).toBeDefined()
-  })
-
-  it('has no Spotify link without a Spotify URL', async () => {
-    renderWithRouter(<ArtistHeader artist={artist} ranking={rankingFor(artist, 1, 2)} spotifyUrl={null} />)
+  it('states why there is no Spotify link instead of showing a dead one', async () => {
+    renderWithRouter(
+      <ArtistHeader artist={artist} kicker="k" spotifyUrl={null} noLinkNote="Sample artist — no Spotify page" />,
+    )
 
     await screen.findByRole('heading', { level: 1 })
+    expect(screen.getByText('Sample artist — no Spotify page')).toBeDefined()
     expect(screen.queryByRole('link', { name: /spotify/i })).toBeNull()
   })
 
   it('opens the artist in Spotify in a new tab when there is a URL', async () => {
     const url = 'https://open.spotify.com/artist/artist-a'
-    renderWithRouter(<ArtistHeader artist={artist} ranking={rankingFor(artist, 1, 2)} spotifyUrl={url} />)
+    renderWithRouter(<ArtistHeader artist={artist} kicker="k" spotifyUrl={url} noLinkNote="unused" />)
 
     const link = await screen.findByRole('link', { name: 'Open in Spotify' })
     expect(link.getAttribute('href')).toBe(url)
     expect(link.getAttribute('target')).toBe('_blank')
     expect(link.getAttribute('rel')).toBe('noreferrer')
+    expect(screen.queryByText('unused')).toBeNull()
   })
+})
 
-  it('explains an artist not counted in this mode and links to the same artist with every credit counted', async () => {
-    renderWithRouter(<ArtistHeader artist={artist} ranking={null} spotifyUrl={null} />)
+describe('ArtistStats', () => {
+  it('shows saved tracks, share of library, primary credits and the first like', async () => {
+    const { container } = renderWithRouter(
+      <ArtistStats savedTracks={318} share={0.0318} asPrimary={204} firstLiked="2019-04" />,
+    )
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Pale Oxbow' })).toBeDefined()
-    expect(screen.getByText(/only credited as a featured artist/)).toBeDefined()
-    expect(screen.queryByText(/liked song/)).toBeNull()
-    const switchLink = screen.getByRole('link', { name: 'Count every credited artist' })
-    expect(switchLink.getAttribute('href')?.startsWith('/demo/artist/artist-a')).toBe(true)
+    await screen.findByText('Saved tracks', { selector: 'dt' })
+    const value = (label: string) => screen.getByText(label, { selector: 'dt' }).nextElementSibling?.textContent
+    expect(value('Saved tracks')).toBe('318')
+    expect(value('Share of library')).toBe('3.18%')
+    expect(value('As primary')).toBe('204')
+    expect(value('First liked')).toBe('2019-04')
+    await expectNoAxeViolations(container)
+  })
+})
+
+describe('FeaturedOnlyNotice', () => {
+  it('explains the empty page and switches to all artists on the same artist, keeping the sort', async () => {
+    const artist = makeArtist({ id: 'artist-a', name: 'Odile Ravel' })
+
+    renderWithRouter(<FeaturedOnlyNotice artist={artist} savedTracks={26} sort="alpha" />)
+
+    const title = 'Nothing to show in “primary artist only”'
+    expect(await screen.findByRole('heading', { level: 2, name: title })).toBeDefined()
+    expect(screen.getByText(/Every one of Odile Ravel’s 26 saved tracks is a featured credit/)).toBeDefined()
+    expect(screen.getByRole('link', { name: 'Switch to all artists' }).getAttribute('href')).toBe(
+      '/demo/artist/artist-a?mode=all&sort=alpha',
+    )
+    expect(screen.getByRole('link', { name: 'Back to ranking' }).getAttribute('href')).toBe(
+      '/demo?mode=primary&sort=alpha',
+    )
   })
 })
 

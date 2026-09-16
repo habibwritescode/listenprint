@@ -1,58 +1,44 @@
-import { Link } from '@tanstack/react-router'
-import type { ArtistRanking, ArtistRef } from '../../library/types.ts'
+import type { ArtistRef } from '../../library/types.ts'
 import { ArtistAvatar } from './ArtistAvatar.tsx'
 
 interface ArtistHeaderProps {
   artist: ArtistRef
-  /** `null` when the artist has no counted tracks in `mode`, e.g. a featured-only artist in `primary`. */
-  ranking: ArtistRanking | null
+  kicker: string
   spotifyUrl: string | null
+  /** Shown in the link's place when there is no link: a stated fact, never a dead button. */
+  noLinkNote: string
 }
 
-const countFormat = new Intl.NumberFormat()
-
-const actionClass =
-  'rounded-sm border border-border px-3 py-2 text-sm font-semibold text-text transition-colors hover:border-accent hover:text-bright-accent'
-
-export function ArtistHeader({ artist, ranking, spotifyUrl }: ArtistHeaderProps) {
+// The 96px tile is the same letter avatar as the 44px row tile, so a list-to-detail transition can scale one element.
+export function ArtistHeader({ artist, kicker, spotifyUrl, noLinkNote }: ArtistHeaderProps) {
   return (
-    <header className="grid gap-5">
-      {spotifyUrl && (
-        <a href={spotifyUrl} target="_blank" rel="noreferrer" className={`${actionClass} justify-self-start`}>
-          Open in Spotify
-        </a>
-      )}
-
-      <div className="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-3.5">
-        <ArtistAvatar name={artist.name} size="header" />
-        <div className="min-w-0">
-          {ranking && (
-            <p className="mb-2 text-[0.78rem] font-extrabold text-subtle uppercase tabular-nums">
-              {`#${ranking.rank} · ${countFormat.format(ranking.count)} liked ${ranking.count === 1 ? 'song' : 'songs'}`}
+    <header className="flex flex-wrap items-end gap-5">
+      <ArtistAvatar name={artist.name} size="header" />
+      <div className="min-w-0 flex-[1_1_260px]">
+        <p className="text-2xs tracking-[0.12em] text-subtle uppercase tabular-nums">{kicker}</p>
+        <h1
+          id="artist-title"
+          className="mt-2 text-[clamp(25px,3.6vw,36px)] leading-[1.05] font-bold tracking-[-0.03em] wrap-break-word"
+        >
+          {artist.name}
+        </h1>
+        <div className="mt-3.25 flex flex-wrap items-center gap-2">
+          {spotifyUrl ? (
+            <a
+              href={spotifyUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-full border border-border bg-soft-accent px-2.75 py-1 text-sm text-bright-accent transition-colors hover:border-accent"
+            >
+              Open in Spotify<span aria-hidden> ↗</span>
+            </a>
+          ) : (
+            <p className="rounded-full border border-dashed border-border px-2.75 py-1 text-sm text-subtle">
+              {noLinkNote}
             </p>
           )}
-          <h1 id="artist-title" className="text-3xl font-bold tracking-tight wrap-break-word">
-            {artist.name}
-          </h1>
         </div>
       </div>
-
-      {!ranking && (
-        <div className="rounded-md border border-border bg-surface p-4">
-          <p className="text-muted">
-            {artist.name} is only credited as a featured artist, so they aren't ranked when counting primary
-            artists only.
-          </p>
-          <Link
-            to="/demo/artist/$artistId"
-            params={{ artistId: artist.id }}
-            search={{ mode: 'all' }}
-            className="mt-3 inline-block font-medium text-bright-accent hover:text-bright-accent"
-          >
-            Count every credited artist
-          </Link>
-        </div>
-      )}
     </header>
   )
 }

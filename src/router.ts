@@ -12,6 +12,8 @@ import type { QueryClient } from '@tanstack/react-query'
 import type { AuthSession } from './auth/session.ts'
 import { ErrorFallback } from './components/ErrorFallback.tsx'
 import { demoLibraryQueryOptions } from './demo/demo-library-query.ts'
+import { DEFAULT_SORT_ORDER, isSortOrder } from './library/presentation.ts'
+import type { SortOrder } from './library/presentation.ts'
 import { DEFAULT_RANKING_MODE, artistTracks, isRankingMode } from './library/rankings.ts'
 import type { RankingMode } from './library/types.ts'
 import { ArtistPage } from './routes/ArtistPage.tsx'
@@ -46,10 +48,17 @@ function validateCallbackSearch(search: Record<string, unknown>): CallbackSearch
 
 interface RankingSearch {
   mode: RankingMode
+  sort: SortOrder
 }
 
-function validateRankingSearch(search: { mode?: RankingMode } & SearchSchemaInput): RankingSearch {
-  return { mode: isRankingMode(search.mode) ? search.mode : DEFAULT_RANKING_MODE }
+// Artist pages carry the list's sort too, only so their back link can restore it.
+type RankingSearchInput = { mode?: RankingMode; sort?: SortOrder } & SearchSchemaInput
+
+function validateRankingSearch(search: RankingSearchInput): RankingSearch {
+  return {
+    mode: isRankingMode(search.mode) ? search.mode : DEFAULT_RANKING_MODE,
+    sort: isSortOrder(search.sort) ? search.sort : DEFAULT_SORT_ORDER,
+  }
 }
 
 const rootRoute = createRootRouteWithContext<RouterContext>()({
@@ -75,7 +84,7 @@ const demoRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/demo',
   validateSearch: validateRankingSearch,
-  search: { middlewares: [stripSearchParams({ mode: DEFAULT_RANKING_MODE })] },
+  search: { middlewares: [stripSearchParams({ mode: DEFAULT_RANKING_MODE, sort: DEFAULT_SORT_ORDER })] },
   loader: ({ context }) => context.queryClient.ensureQueryData(demoLibraryQueryOptions),
   component: lazyRouteComponent(() => import('./routes/DemoPage.tsx'), 'DemoPage'),
   pendingComponent: DemoPagePending,
@@ -85,7 +94,7 @@ const demoArtistRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/demo/artist/$artistId',
   validateSearch: validateRankingSearch,
-  search: { middlewares: [stripSearchParams({ mode: DEFAULT_RANKING_MODE })] },
+  search: { middlewares: [stripSearchParams({ mode: DEFAULT_RANKING_MODE, sort: DEFAULT_SORT_ORDER })] },
   loader: async ({ context, params }) => {
     const library = await context.queryClient.ensureQueryData(demoLibraryQueryOptions)
     const artist = artistTracks(library.tracks, params.artistId, 'all')

@@ -14,5 +14,7 @@ describe('ListSkeleton', () => {
     expect(status.getAttribute('aria-busy')).toBe('true')
     expect(status.textContent).toContain('Building demo library…')
     expect(container.querySelectorAll('[data-slot="skeleton-row"]').length).toBeGreaterThan(0)
+    // Real rows replace these without shifting the page.
+    for (const row of container.querySelectorAll('[data-slot="skeleton-row"]')) expect(row.className).toContain('h-19.25')
   })
 })

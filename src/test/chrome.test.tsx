@@ -43,11 +43,12 @@ describe('site header', () => {
 describe('back bar on artist pages', () => {
   it('replaces the header on a demo artist page, keeping the mode and the chip', async () => {
     const [top] = rankArtists(testLibrary.tracks, 'primary')
-    const { container } = renderApp(`/demo/artist/${top.artist.id}?mode=primary`)
+    const { container } = renderApp(`/demo/artist/${top.artist.id}?mode=primary&sort=alpha`)
     await screen.findByRole('heading', { level: 1, name: top.artist.name })
     const bar = within(siteHeader())
 
-    expect(bar.getByRole('link', { name: 'Back to ranking' }).getAttribute('href')).toBe('/demo?mode=primary')
+    const back = bar.getByRole('link', { name: 'Back to ranking' })
+    expect(back.getAttribute('href')).toBe('/demo?mode=primary&sort=alpha')
     expect(bar.getByText('Sample data')).toBeDefined()
     expect(bar.queryByRole('link', { name: 'listenprint' })).toBeNull()
     expect(bar.queryByRole('group', { name: 'Ranking mode' })).toBeNull()

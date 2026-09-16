@@ -2,6 +2,7 @@
 import { cleanup, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { concentration, roundedPercents, sortRankings } from '../library/presentation.ts'
 import { rankArtists } from '../library/rankings.ts'
 import type { ArtistRanking, RankingMode } from '../library/types.ts'
 import type { AppRouter } from '../router.ts'
@@ -49,16 +50,17 @@ function headerSummary({ rank, count }: ArtistRanking) {
 
 function topRowName(mode: RankingMode) {
   const [top] = rankArtists(testLibrary.tracks, mode)
-  return `Rank 1, ${top.artist.name}, ${top.count} liked ${top.count === 1 ? 'song' : 'songs'}`
+  const name = top.artist.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`^Rank 1, (tied, )?${name}, ${top.count} liked songs?, `)
 }
 
 describe('/demo search params', () => {
   it('resolves ?mode=primary and keeps it in the URL', async () => {
     const { router } = renderApp('/demo?mode=primary')
 
-    await screen.findByRole('heading', { name: 'Demo library' })
+    await screen.findByRole('heading', { level: 1, name: 'Sample library ranking' })
 
-    expect(demoSearch(router)).toEqual({ mode: 'primary' })
+    expect(demoSearch(router)).toEqual({ mode: 'primary', sort: 'count' })
     expect(router.state.location.searchStr).toBe('?mode=primary')
   })
 
@@ -67,12 +69,55 @@ describe('/demo search params', () => {
     async (url) => {
       const { router } = renderApp(url)
 
-      await screen.findByRole('heading', { name: 'Demo library' })
+      await screen.findByRole('heading', { level: 1, name: 'Sample library ranking' })
 
-      expect(demoSearch(router)).toEqual({ mode: 'all' })
+      expect(demoSearch(router)).toEqual({ mode: 'all', sort: 'count' })
       expect(router.state.location.searchStr).toBe('')
     },
   )
+})
+
+describe('/demo sort', () => {
+  function firstAlphaRowName() {
+    const [first] = sortRankings(rankArtists(testLibrary.tracks, 'all'), 'alpha')
+    const name = first.artist.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return new RegExp(`^Rank ${first.rank}, ${name}, `)
+  }
+
+  it('orders rows by name for ?sort=alpha, keeping count ranks', async () => {
+    const { router } = renderApp('/demo?sort=alpha')
+
+    const list = await screen.findByRole('list', { name: 'Artists ranked by liked songs' })
+    const rows = within(list).getAllByRole('listitem')
+    expect(within(rows[0]).getByRole('link').getAttribute('aria-label')).toMatch(firstAlphaRowName())
+    expect(demoSearch(router)).toEqual({ mode: 'all', sort: 'alpha' })
+    expect(router.state.location.searchStr).toBe('?sort=alpha')
+    const artistCount = countFormat.format(rankArtists(testLibrary.tracks, 'all').length)
+    expect(screen.getByRole('heading', { level: 2, name: `${artistCount} artists, A to Z` })).toBeDefined()
+  })
+
+  it.each(['/demo?sort=bogus', '/demo?sort=count'])('resolves %s to count order, sort-free URL', async (url) => {
+    const { router } = renderApp(url)
+
+    await screen.findByRole('link', { name: topRowName('all') })
+
+    expect(demoSearch(router)).toEqual({ mode: 'all', sort: 'count' })
+    expect(router.state.location.searchStr).toBe('')
+  })
+
+  it('switches sort in the URL without adding history entries, keeping the mode', async () => {
+    const user = userEvent.setup()
+    const { router } = renderApp('/demo?mode=primary')
+    await screen.findByRole('radio', { name: 'A to Z' })
+    const historyLength = router.history.length
+
+    await user.click(screen.getByRole('radio', { name: 'A to Z' }))
+    await waitFor(() => expect(router.state.location.searchStr).toBe('?mode=primary&sort=alpha'))
+    await user.click(screen.getByRole('radio', { name: 'Count' }))
+    await waitFor(() => expect(router.state.location.searchStr).toBe('?mode=primary'))
+
+    expect(router.history.length).toBe(historyLength)
+  })
 })
 
 describe('/demo ranking mode', () => {
@@ -105,9 +150,16 @@ describe('/demo ranking mode', () => {
     renderApp(mode === 'all' ? '/demo' : '/demo?mode=primary')
 
     expect(await screen.findByRole('link', { name: topRowName(mode) })).toBeDefined()
-    expect(statValue('Liked tracks')).toBe(countFormat.format(testLibrary.tracks.length))
-    expect(statValue('Artists ranked')).toBe(countFormat.format(rankings.length))
-    expect(statValue('Songs by #1')).toBe(countFormat.format(rankings[0].count))
+    const tiers = concentration(rankings, testLibrary.tracks.length)
+    if (!tiers) throw new Error('test library is empty')
+    const [top10, next90] = roundedPercents([tiers.top10Tracks, tiers.next90Tracks, tiers.restTracks])
+    expect(statValue('Concentration')).toBe(`${top10}%`)
+    expect(statValue('Saved tracks')).toBe(countFormat.format(testLibrary.tracks.length))
+    expect(statValue('Artists')).toBe(countFormat.format(rankings.length))
+    expect(screen.getByText(`Top 10 · ${top10}%`)).toBeDefined()
+    expect(screen.getByText(`Next 90 · ${next90}%`)).toBeDefined()
+    const trackTotal = countFormat.format(testLibrary.tracks.length)
+    expect(screen.getByText(new RegExp(`Sample library: ${trackTotal} tracks`))).toBeDefined()
   })
 
   it('updates the stats when the mode changes', async () => {
@@ -120,7 +172,7 @@ describe('/demo ranking mode', () => {
 
     await user.click(radio('Primary artist only'))
 
-    await waitFor(() => expect(statValue('Artists ranked')).toBe(countFormat.format(primaryArtists)))
+    await waitFor(() => expect(statValue('Artists')).toBe(countFormat.format(primaryArtists)))
     expect(screen.getByRole('link', { name: topRowName('primary') })).toBeDefined()
   })
 })
@@ -189,11 +241,27 @@ describe('list to detail navigation', () => {
 
     await user.click(screen.getByRole('link', { name: 'Back to ranking' }))
 
-    expect(await screen.findByRole('heading', { name: 'Demo library' })).toBeDefined()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Sample library ranking' })).toBeDefined()
     expect(router.state.location.pathname).toBe('/demo')
     expect(router.state.location.searchStr).toBe('?mode=primary')
   })
 
+  it('keeps the A–Z sort from the list to the artist page and back', async () => {
+    const user = userEvent.setup()
+    const { router } = renderApp('/demo?mode=primary&sort=alpha')
+    const list = await screen.findByRole('list', { name: 'Artists ranked by liked songs' })
+    const [firstRow] = within(list).getAllByRole('listitem')
+
+    await user.click(within(firstRow).getByRole('link'))
+
+    await waitFor(() => expect(router.state.location.pathname).toMatch(/^\/demo\/artist\//))
+    expect(router.state.location.searchStr).toBe('?mode=primary&sort=alpha')
+
+    await user.click(await screen.findByRole('link', { name: 'Back to ranking' }))
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/demo'))
+    expect(router.state.location.searchStr).toBe('?mode=primary&sort=alpha')
+  })
 })
 
 describe('/', () => {
@@ -210,7 +278,7 @@ describe('/', () => {
 
     await user.click(tryDemo)
 
-    expect(await screen.findByRole('heading', { name: 'Demo library' })).toBeDefined()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Sample library ranking' })).toBeDefined()
     expect(router.state.location.pathname).toBe('/demo')
   })
 })

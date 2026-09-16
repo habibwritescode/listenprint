@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
-import { act, cleanup, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { barWidthPercent } from '../../library/presentation.ts'
+import { barWidthPercent, sortRankings } from '../../library/presentation.ts'
 import { rankArtists } from '../../library/rankings.ts'
+import { expectNoAxeViolations } from '../../test/axe.ts'
 import { makeArtist, makeTrack } from '../../test/factories.ts'
 import { renderWithRouter } from '../../test/render-with-router.ts'
 import { RankedArtistList } from './RankedArtistList.tsx'
@@ -47,6 +48,25 @@ function giveDocumentListHeight() {
   })
 }
 
+// The sort toggle in the panel header comes first in Tab order.
+async function tabIntoList(user: ReturnType<typeof userEvent.setup>) {
+  await user.tab()
+  await user.tab()
+}
+
+function ManyArtists() {
+  return (
+    <RankedArtistList
+      rankings={manyRankings()}
+      leaderCount={1}
+      trackCount={ROW_COUNT}
+      mode="all"
+      sort="count"
+      label="2,000 artists"
+    />
+  )
+}
+
 afterEach(() => {
   cleanup()
   scrollWindowTo(0)
@@ -56,7 +76,7 @@ afterEach(() => {
 
 describe('RankedArtistList', () => {
   it('renders only a window of rows, each with its position in the full list', async () => {
-    renderWithRouter(<RankedArtistList rankings={manyRankings()} leaderCount={1} mode="all" />)
+    renderWithRouter(<ManyArtists />)
 
     const items = await screen.findAllByRole('listitem')
 
@@ -68,7 +88,7 @@ describe('RankedArtistList', () => {
 
   // Fails if the 'use no memo' directive is removed: compiled, the virtualizer's rows never update.
   it('renders later rows after the window scrolls', async () => {
-    renderWithRouter(<RankedArtistList rankings={manyRankings()} leaderCount={1} mode="all" />)
+    renderWithRouter(<ManyArtists />)
     await screen.findAllByRole('listitem')
     const before = positions()
 
@@ -83,32 +103,80 @@ describe('RankedArtistList', () => {
     const artistA = makeArtist({ id: 'artist-a', name: 'Artist A' })
     const artistB = makeArtist({ id: 'artist-b', name: 'Artist B' })
     const rankings = rankArtists(
-      [makeTrack({ artists: [artistA] }), makeTrack({ artists: [artistA, artistB] })],
+      [makeTrack({ artists: [artistA] }), makeTrack({ artists: [artistA, artistB] }), makeTrack()],
       'all',
     )
 
-    renderWithRouter(<RankedArtistList rankings={rankings} leaderCount={2} mode="primary" />)
+    renderWithRouter(
+      <RankedArtistList rankings={rankings} leaderCount={2} trackCount={3} mode="primary" sort="count" label="3" />,
+    )
 
-    const leader = await screen.findByRole('link', { name: 'Rank 1, Artist A, 2 liked songs' })
-    const second = screen.getByRole('link', { name: 'Rank 2, Artist B, 1 liked song' })
-    expect(leader.getAttribute('href')).toBe('/demo/artist/artist-a?mode=primary')
-    expect(second.getAttribute('href')).toBe('/demo/artist/artist-b?mode=primary')
+    const leader = await screen.findByRole('link', { name: 'Rank 1, Artist A, 2 liked songs, 66.7% of library' })
+    const second = screen.getByRole('link', { name: /^Rank 2, tied, Artist B, 1 liked song, 33\.3% of library$/ })
+    expect(leader.getAttribute('href')).toBe('/demo/artist/artist-a?mode=primary&sort=count')
+    expect(second.getAttribute('href')).toBe('/demo/artist/artist-b?mode=primary&sort=count')
+  })
+
+  it('shows the count, the share as text, and a tie marker only on tied ranks', async () => {
+    const solo = makeArtist({ id: 'solo', name: 'Solo' })
+    const tracks = [makeTrack({ artists: [solo] }), makeTrack({ artists: [solo] }), makeTrack(), makeTrack()]
+    const rankings = rankArtists(tracks, 'all')
+
+    renderWithRouter(
+      <RankedArtistList rankings={rankings} leaderCount={2} trackCount={4} mode="all" sort="count" label="3 artists" />,
+    )
+
+    const [leader, tiedA, tiedB] = await screen.findAllByRole('listitem')
+    expect(within(leader).getByText('50.0%')).toBeDefined()
+    expect(within(leader).queryByText('=')).toBeNull()
+    expect(within(tiedA).getByText('=')).toBeDefined()
+    expect(within(tiedB).getByText('25.0%')).toBeDefined()
+  })
+
+  it('keeps count ranks in A–Z order, dimmed, with no tie markers and a Rank column', async () => {
+    const solo = makeArtist({ id: 'solo', name: 'Zed' })
+    const tracks = [makeTrack({ artists: [solo] }), makeTrack({ artists: [solo] }), makeTrack(), makeTrack()]
+    const rankings = sortRankings(rankArtists(tracks, 'all'), 'alpha')
+
+    const { container } = renderWithRouter(
+      <RankedArtistList rankings={rankings} leaderCount={2} trackCount={4} mode="all" sort="alpha" label="3 artists" />,
+    )
+
+    const rows = await screen.findAllByRole('listitem')
+    const zed = within(rows[2]).getByRole('link')
+    expect(zed.getAttribute('aria-label')).toBe('Rank 1, Zed, 2 liked songs, 50.0% of library')
+    expect(within(rows[0]).getByRole('link').getAttribute('aria-label')).toMatch(/^Rank 2, Artist /)
+    expect(screen.queryByText('=')).toBeNull()
+    expect(container.querySelector('[data-slot="column-header"]')?.firstElementChild?.textContent).toBe('Rank')
+    expect(screen.getByRole<HTMLInputElement>('radio', { name: 'A to Z' }).checked).toBe(true)
+  })
+
+  it('names the panel and hides the decorative column header', async () => {
+    const { container } = renderWithRouter(<ManyArtists />)
+
+    expect(await screen.findByRole('heading', { level: 2, name: '2,000 artists' })).toBeDefined()
+    expect(container.querySelector('[data-slot="column-header"]')?.getAttribute('aria-hidden')).toBe('true')
+    await expectNoAxeViolations(container)
   })
 
   it('sizes each bar relative to the leader count', async () => {
     const artist = makeArtist({ id: 'artist-a', name: 'Artist A' })
     const rankings = rankArtists([makeTrack({ artists: [artist] })], 'all')
 
-    renderWithRouter(<RankedArtistList rankings={rankings} leaderCount={4} mode="all" />)
+    renderWithRouter(
+      <RankedArtistList rankings={rankings} leaderCount={4} trackCount={1} mode="all" sort="count" label="1 artist" />,
+    )
 
-    const link = await screen.findByRole('link', { name: 'Rank 1, Artist A, 1 liked song' })
+    const link = await screen.findByRole('link', { name: /^Rank 1, Artist A,/ })
     expect(link.querySelector<HTMLElement>('[data-slot="bar"]')?.style.width).toBe(`${barWidthPercent(1, 4)}%`)
   })
 
   it('shows an empty state when there are no rankings', async () => {
-    renderWithRouter(<RankedArtistList rankings={[]} leaderCount={0} mode="all" />)
+    renderWithRouter(
+      <RankedArtistList rankings={[]} leaderCount={0} trackCount={0} mode="all" sort="count" label="No artists yet" />,
+    )
 
-    expect(await screen.findByText('No liked songs')).toBeDefined()
+    expect(await screen.findByText('No liked songs to rank')).toBeDefined()
     expect(screen.queryByRole('list')).toBeNull()
   })
 })
@@ -116,10 +184,10 @@ describe('RankedArtistList', () => {
 describe('RankedArtistList keyboard navigation', () => {
   it('moves focus to the next and previous row with the arrow keys', async () => {
     const user = userEvent.setup()
-    renderWithRouter(<RankedArtistList rankings={manyRankings()} leaderCount={1} mode="all" />)
+    renderWithRouter(<ManyArtists />)
     await screen.findAllByRole('listitem')
 
-    await user.tab()
+    await tabIntoList(user)
     expect(focusedPosition()).toBe('1')
     await user.keyboard('{ArrowDown}{ArrowDown}')
     expect(focusedPosition()).toBe('3')
@@ -131,9 +199,9 @@ describe('RankedArtistList keyboard navigation', () => {
     const user = userEvent.setup()
     giveDocumentListHeight()
     const scrollTo = followWindowScrollTo()
-    renderWithRouter(<RankedArtistList rankings={manyRankings()} leaderCount={1} mode="all" />)
+    renderWithRouter(<ManyArtists />)
     await screen.findAllByRole('listitem')
-    await user.tab()
+    await tabIntoList(user)
 
     await user.keyboard('{End}')
     await waitFor(() => expect(focusedPosition()).toBe(String(ROW_COUNT)))
@@ -147,13 +215,13 @@ describe('RankedArtistList keyboard navigation', () => {
     const user = userEvent.setup()
     renderWithRouter(
       <>
-        <RankedArtistList rankings={manyRankings()} leaderCount={1} mode="all" />
+        <ManyArtists />
         <button type="button">After the list</button>
       </>,
     )
     await screen.findAllByRole('listitem')
 
-    await user.tab()
+    await tabIntoList(user)
     expect(focusedPosition()).toBe('1')
     await user.tab()
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'After the list' }))
@@ -164,7 +232,7 @@ describe('RankedArtistList keyboard navigation', () => {
     renderWithRouter(
       <>
         <button type="button">Before the list</button>
-        <RankedArtistList rankings={manyRankings()} leaderCount={1} mode="all" />
+        <ManyArtists />
       </>,
     )
     await screen.findAllByRole('listitem')
@@ -178,7 +246,7 @@ describe('RankedArtistList keyboard navigation', () => {
 
   // Without this, scrolling the active row out of the window would leave no row reachable with Tab.
   it('keeps exactly one rendered row reachable with Tab after scrolling away from the active row', async () => {
-    renderWithRouter(<RankedArtistList rankings={manyRankings()} leaderCount={1} mode="all" />)
+    renderWithRouter(<ManyArtists />)
     await screen.findAllByRole('listitem')
 
     await act(async () => {

@@ -1,57 +1,64 @@
 import { Link } from '@tanstack/react-router'
 import { barWidthPercent } from '../../library/presentation.ts'
+import type { SortOrder } from '../../library/presentation.ts'
 import type { ArtistRanking, RankingMode } from '../../library/types.ts'
 import { ArtistAvatar } from './ArtistAvatar.tsx'
+import { ARTIST_ROW_GRID, artistRowLabel, formatShare } from './row-format.ts'
 
 interface ArtistRowProps {
   ranking: ArtistRanking
   leaderCount: number
+  /** Share of the library as a fraction, always against the whole library. */
+  share: number
+  /** The rank is shared with another artist. Marked, so a repeated number doesn't look like a bug. */
+  tied: boolean
+  /** Out of sequence in A–Z order, so it's shown dimmed. */
+  dimRank: boolean
   mode: RankingMode
+  sort: SortOrder
   /** 0 for the list's single Tab stop, -1 for every other row. */
   tabIndex: number
 }
 
-export function ArtistRow({ ranking, leaderCount, mode, tabIndex }: ArtistRowProps) {
+const countFormat = new Intl.NumberFormat()
+
+export function ArtistRow({ ranking, leaderCount, share, tied, dimRank, mode, sort, tabIndex }: ArtistRowProps) {
   const { artist, rank, count, tracks } = ranking
-  const label = `Rank ${rank}, ${artist.name}, ${count} liked ${count === 1 ? 'song' : 'songs'}`
   const sample = tracks
     .slice(0, 3)
     .map((track) => track.name)
-    .join(' • ')
+    .join(' · ')
 
   return (
     <Link
       to="/demo/artist/$artistId"
       params={{ artistId: artist.id }}
-      search={{ mode }}
+      search={{ mode, sort }}
       tabIndex={tabIndex}
-      className="group relative isolate grid h-full grid-cols-[42px_minmax(0,1fr)_64px] items-center gap-4 px-3 py-2.5 focus-visible:-outline-offset-2 min-[741px]:grid-cols-[68px_minmax(0,1fr)_112px] min-[741px]:px-4.5"
+      aria-label={artistRowLabel(ranking, share, tied)}
+      className={`grid h-full items-center gap-3.5 px-4 transition-colors hover:bg-raised-surface ${ARTIST_ROW_GRID}`}
     >
-      {/* One text node: spaces at the edges of separate screen-reader-only spans get trimmed. */}
-      <span className="sr-only">{label}</span>
-      <span
-        data-slot="bar"
-        aria-hidden
-        className="absolute inset-y-0 left-0 -z-10 bg-linear-to-r from-accent/24 to-accent/0"
-        style={{ width: `${barWidthPercent(count, leaderCount)}%` }}
-      />
-      <span aria-hidden className="text-[1.1rem] font-black text-subtle tabular-nums">
+      <span aria-hidden className={`flex items-center gap-1 text-md tabular-nums ${dimRank ? 'text-subtle' : 'text-muted'}`}>
         {rank}
+        {tied && <span className="text-[9px] text-highlight">=</span>}
       </span>
-      <span
-        aria-hidden
-        className="grid min-w-0 grid-cols-[42px_minmax(0,1fr)] items-center gap-3 min-[741px]:grid-cols-[48px_minmax(0,1fr)]"
-      >
-        <ArtistAvatar name={artist.name} />
-        <span className="grid min-w-0 gap-1">
-          <strong className="truncate text-[1.02rem] font-bold text-text group-hover:text-bright-accent group-focus-visible:text-bright-accent">
-            {artist.name}
-          </strong>
-          <small className="truncate text-sm text-muted">{sample}</small>
+      <ArtistAvatar name={artist.name} />
+      <span aria-hidden className="min-w-0">
+        <span className="block truncate text-base font-medium tracking-[-0.01em] text-text">{artist.name}</span>
+        <span className="mt-1 block truncate text-sm text-subtle">{sample}</span>
+      </span>
+      <span aria-hidden className="text-right text-base tabular-nums">
+        {countFormat.format(count)}
+      </span>
+      <span aria-hidden className="hidden items-center gap-2.5 min-[741px]:flex">
+        <span className="h-1.25 flex-1 overflow-hidden rounded-full bg-raised-surface">
+          <span
+            data-slot="bar"
+            className="block h-full rounded-full bg-accent"
+            style={{ width: `${barWidthPercent(count, leaderCount)}%` }}
+          />
         </span>
-      </span>
-      <span aria-hidden className="justify-self-end text-base font-black tabular-nums min-[741px]:text-[1.18rem]">
-        {count}
+        <span className="w-9.5 shrink-0 text-right text-xs text-muted tabular-nums">{formatShare(share)}</span>
       </span>
     </Link>
   )

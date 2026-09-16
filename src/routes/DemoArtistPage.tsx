@@ -19,7 +19,6 @@ export function DemoArtistPage() {
       <ArtistHeader
         artist={artist}
         ranking={ranking}
-        mode={mode}
         spotifyUrl={spotifyArtistUrl(artist, library.source)}
       />
       {ranking && <ArtistTrackList tracks={ranking.tracks} artistName={artist.name} />}

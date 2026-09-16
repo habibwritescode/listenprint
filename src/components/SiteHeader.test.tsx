@@ -16,7 +16,7 @@ afterEach(() => {
 
 describe('SiteHeader', () => {
   it('hides while scrolling down and comes back when scrolling up', async () => {
-    renderWithRouter(<SiteHeader />)
+    renderWithRouter(<SiteHeader>listenprint</SiteHeader>)
     const header = await screen.findByRole('banner')
 
     await act(async () => {
@@ -31,7 +31,7 @@ describe('SiteHeader', () => {
   })
 
   it('is visible again once back at the top of the page', async () => {
-    renderWithRouter(<SiteHeader />)
+    renderWithRouter(<SiteHeader>listenprint</SiteHeader>)
     const header = await screen.findByRole('banner')
 
     await act(async () => {
@@ -45,7 +45,7 @@ describe('SiteHeader', () => {
   })
 
   it('has a background only while the page is scrolled away from the top', async () => {
-    renderWithRouter(<SiteHeader />)
+    renderWithRouter(<SiteHeader>listenprint</SiteHeader>)
     const header = await screen.findByRole('banner')
     expect(header.hasAttribute('data-scrolled')).toBe(false)
 

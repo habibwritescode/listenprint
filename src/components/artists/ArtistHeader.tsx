@@ -1,12 +1,11 @@
 import { Link } from '@tanstack/react-router'
-import type { ArtistRanking, ArtistRef, RankingMode } from '../../library/types.ts'
+import type { ArtistRanking, ArtistRef } from '../../library/types.ts'
 import { ArtistAvatar } from './ArtistAvatar.tsx'
 
 interface ArtistHeaderProps {
   artist: ArtistRef
   /** `null` when the artist has no counted tracks in `mode`, e.g. a featured-only artist in `primary`. */
   ranking: ArtistRanking | null
-  mode: RankingMode
   spotifyUrl: string | null
 }
 
@@ -15,19 +14,14 @@ const countFormat = new Intl.NumberFormat()
 const actionClass =
   'rounded-sm border border-border px-3 py-2 text-sm font-semibold text-text transition-colors hover:border-accent hover:text-bright-accent'
 
-export function ArtistHeader({ artist, ranking, mode, spotifyUrl }: ArtistHeaderProps) {
+export function ArtistHeader({ artist, ranking, spotifyUrl }: ArtistHeaderProps) {
   return (
     <header className="grid gap-5">
-      <div className="flex flex-wrap items-center gap-3">
-        <Link to="/demo" search={{ mode }} className={actionClass}>
-          Back to rankings
-        </Link>
-        {spotifyUrl && (
-          <a href={spotifyUrl} target="_blank" rel="noreferrer" className={actionClass}>
-            Open in Spotify
-          </a>
-        )}
-      </div>
+      {spotifyUrl && (
+        <a href={spotifyUrl} target="_blank" rel="noreferrer" className={`${actionClass} justify-self-start`}>
+          Open in Spotify
+        </a>
+      )}
 
       <div className="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-3.5">
         <ArtistAvatar name={artist.name} size="header" />

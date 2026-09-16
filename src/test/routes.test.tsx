@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, screen, waitFor } from '@testing-library/react'
+import { cleanup, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { rankArtists } from '../library/rankings.ts'
@@ -82,7 +82,7 @@ describe('/demo ranking mode', () => {
     await screen.findByRole('radio', { name: 'Primary artist only' })
 
     expect(radio('Primary artist only').checked).toBe(true)
-    expect(radio('Every credited artist').checked).toBe(false)
+    expect(radio('All credited artists').checked).toBe(false)
   })
 
   it('switches mode in the URL without adding history entries', async () => {
@@ -93,7 +93,7 @@ describe('/demo ranking mode', () => {
 
     await user.click(radio('Primary artist only'))
     await waitFor(() => expect(router.state.location.searchStr).toBe('?mode=primary'))
-    await user.click(radio('Every credited artist'))
+    await user.click(radio('All credited artists'))
     await waitFor(() => expect(router.state.location.searchStr).toBe(''))
 
     expect(router.history.length).toBe(historyLength)
@@ -142,7 +142,9 @@ describe('/demo/artist/$artistId', () => {
     expect(await screen.findByRole('heading', { level: 1, name: title })).toBeDefined()
     expect(screen.getByText('Not in this library').dataset.tone).toBe('neutral')
     expect(screen.getByText('/demo/artist/does-not-exist')).toBeDefined()
-    expect(screen.getByRole('link', { name: 'Back to ranking' }).getAttribute('href')).toBe('/demo?mode=primary')
+    expect(within(screen.getByRole('main')).getByRole('link', { name: 'Back to ranking' }).getAttribute('href')).toBe(
+      '/demo?mode=primary',
+    )
     await expectNoAxeViolations(container)
   })
 
@@ -185,7 +187,7 @@ describe('list to detail navigation', () => {
     expect(router.state.location.pathname).toBe(`/demo/artist/${top.artist.id}`)
     expect(router.state.location.searchStr).toBe('?mode=primary')
 
-    await user.click(screen.getByRole('link', { name: 'Back to rankings' }))
+    await user.click(screen.getByRole('link', { name: 'Back to ranking' }))
 
     expect(await screen.findByRole('heading', { name: 'Demo library' })).toBeDefined()
     expect(router.state.location.pathname).toBe('/demo')

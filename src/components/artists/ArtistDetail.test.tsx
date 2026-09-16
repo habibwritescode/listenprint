@@ -31,29 +31,20 @@ describe('ArtistHeader', () => {
   const artist = makeArtist({ id: 'artist-a', name: 'Pale Oxbow' })
 
   it('shows the name, rank, and liked song count', async () => {
-    renderWithRouter(<ArtistHeader artist={artist} ranking={rankingFor(artist, 3, 2)} mode="all" spotifyUrl={null} />)
+    renderWithRouter(<ArtistHeader artist={artist} ranking={rankingFor(artist, 3, 2)} spotifyUrl={null} />)
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Pale Oxbow' })).toBeDefined()
     expect(screen.getByText('#3 · 2 liked songs')).toBeDefined()
   })
 
   it('uses the singular for one liked song', async () => {
-    renderWithRouter(<ArtistHeader artist={artist} ranking={rankingFor(artist, 12, 1)} mode="all" spotifyUrl={null} />)
+    renderWithRouter(<ArtistHeader artist={artist} ranking={rankingFor(artist, 12, 1)} spotifyUrl={null} />)
 
     expect(await screen.findByText('#12 · 1 liked song')).toBeDefined()
   })
 
-  it('links back to the rankings in the same mode', async () => {
-    renderWithRouter(
-      <ArtistHeader artist={artist} ranking={rankingFor(artist, 1, 2)} mode="primary" spotifyUrl={null} />,
-    )
-
-    const back = await screen.findByRole('link', { name: 'Back to rankings' })
-    expect(back.getAttribute('href')).toBe('/demo?mode=primary')
-  })
-
   it('has no Spotify link without a Spotify URL', async () => {
-    renderWithRouter(<ArtistHeader artist={artist} ranking={rankingFor(artist, 1, 2)} mode="all" spotifyUrl={null} />)
+    renderWithRouter(<ArtistHeader artist={artist} ranking={rankingFor(artist, 1, 2)} spotifyUrl={null} />)
 
     await screen.findByRole('heading', { level: 1 })
     expect(screen.queryByRole('link', { name: /spotify/i })).toBeNull()
@@ -61,7 +52,7 @@ describe('ArtistHeader', () => {
 
   it('opens the artist in Spotify in a new tab when there is a URL', async () => {
     const url = 'https://open.spotify.com/artist/artist-a'
-    renderWithRouter(<ArtistHeader artist={artist} ranking={rankingFor(artist, 1, 2)} mode="all" spotifyUrl={url} />)
+    renderWithRouter(<ArtistHeader artist={artist} ranking={rankingFor(artist, 1, 2)} spotifyUrl={url} />)
 
     const link = await screen.findByRole('link', { name: 'Open in Spotify' })
     expect(link.getAttribute('href')).toBe(url)
@@ -70,7 +61,7 @@ describe('ArtistHeader', () => {
   })
 
   it('explains an artist not counted in this mode and links to the same artist with every credit counted', async () => {
-    renderWithRouter(<ArtistHeader artist={artist} ranking={null} mode="primary" spotifyUrl={null} />)
+    renderWithRouter(<ArtistHeader artist={artist} ranking={null} spotifyUrl={null} />)
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Pale Oxbow' })).toBeDefined()
     expect(screen.getByText(/only credited as a featured artist/)).toBeDefined()

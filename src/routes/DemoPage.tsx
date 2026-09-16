@@ -1,7 +1,6 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { RankedArtistList } from '../components/artists/RankedArtistList.tsx'
-import { RankingModeToggle } from '../components/artists/RankingModeToggle.tsx'
 import { StatsSummary } from '../components/artists/StatsSummary.tsx'
 import { demoLibraryQueryOptions } from '../demo/demo-library-query.ts'
 import { libraryStats } from '../library/presentation.ts'
@@ -26,7 +25,6 @@ export function DemoPage() {
         </p>
       </header>
       <StatsSummary stats={stats} />
-      <RankingModeToggle mode={mode} />
       <RankedArtistList rankings={rankings} leaderCount={stats.leaderCount} mode={mode} />
     </section>
   )

@@ -25,11 +25,11 @@ export function ErrorFallback({ error, reset }: ErrorFallbackProps) {
         <button
           type="button"
           onClick={reset}
-          className="rounded-sm bg-accent px-4 py-2 font-semibold text-on-accent hover:bg-accent-bright"
+          className="rounded-sm bg-accent px-4 py-2 font-semibold text-on-accent hover:bg-bright-accent"
         >
           Try again
         </button>
-        <a href="/" className="font-medium text-accent hover:text-accent-bright">
+        <a href="/" className="font-medium text-bright-accent hover:text-bright-accent">
           Back to rankings
         </a>
       </div>

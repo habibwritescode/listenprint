@@ -13,7 +13,7 @@ interface ArtistHeaderProps {
 const countFormat = new Intl.NumberFormat()
 
 const actionClass =
-  'rounded-sm border border-border px-3 py-2 text-sm font-semibold text-text transition-colors hover:border-accent hover:text-accent'
+  'rounded-sm border border-border px-3 py-2 text-sm font-semibold text-text transition-colors hover:border-accent hover:text-bright-accent'
 
 export function ArtistHeader({ artist, ranking, mode, spotifyUrl }: ArtistHeaderProps) {
   return (
@@ -53,7 +53,7 @@ export function ArtistHeader({ artist, ranking, mode, spotifyUrl }: ArtistHeader
             to="/demo/artist/$artistId"
             params={{ artistId: artist.id }}
             search={{ mode: 'all' }}
-            className="mt-3 inline-block font-medium text-accent hover:text-accent-bright"
+            className="mt-3 inline-block font-medium text-bright-accent hover:text-bright-accent"
           >
             Count every credited artist
           </Link>

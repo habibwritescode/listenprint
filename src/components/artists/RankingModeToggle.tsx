@@ -25,7 +25,7 @@ export function RankingModeToggle({ mode }: RankingModeToggleProps) {
               value={option.value}
               checked={mode === option.value}
               onChange={() => navigate({ to: '.', search: (prev) => ({ ...prev, mode: option.value }), replace: true })}
-              className="accent-accent"
+              className="accent-(--color-accent)"
             />
             {option.label}
           </label>

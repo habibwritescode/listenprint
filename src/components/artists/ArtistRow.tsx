@@ -44,7 +44,7 @@ export function ArtistRow({ ranking, leaderCount, mode, tabIndex }: ArtistRowPro
       >
         <ArtistAvatar name={artist.name} />
         <span className="grid min-w-0 gap-1">
-          <strong className="truncate text-[1.02rem] font-bold text-text group-hover:text-accent group-focus-visible:text-accent">
+          <strong className="truncate text-[1.02rem] font-bold text-text group-hover:text-bright-accent group-focus-visible:text-bright-accent">
             {artist.name}
           </strong>
           <small className="truncate text-sm text-muted">{sample}</small>

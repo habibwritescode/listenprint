@@ -7,7 +7,7 @@ export function NotFoundPage() {
         Page not found
       </h1>
       <p className="mt-2 text-muted">There's nothing at this address.</p>
-      <Link to="/" className="mt-4 inline-block font-medium text-accent hover:text-accent-bright">
+      <Link to="/" className="mt-4 inline-block font-medium text-bright-accent hover:text-bright-accent">
         Back to rankings
       </Link>
     </section>

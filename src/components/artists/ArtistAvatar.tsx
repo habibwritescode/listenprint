@@ -14,7 +14,7 @@ export function ArtistAvatar({ name, size = 'row' }: ArtistAvatarProps) {
   return (
     <span
       aria-hidden
-      className={`grid shrink-0 place-items-center rounded-sm bg-surface-raised font-black text-accent-soft ${SIZE_CLASSES[size]}`}
+      className={`grid shrink-0 place-items-center rounded-sm bg-raised-surface font-black text-avatar-ink-1 ${SIZE_CLASSES[size]}`}
     >
       {artistInitial(name)}
     </span>

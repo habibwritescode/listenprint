@@ -1,29 +1,97 @@
 @import "tailwindcss";
 
 /*
- * Tailwind's default color palette is cleared so components can only use these tokens
- * (plus built-ins like `transparent` and `current`); raw colors belong in this file only.
+ * Self-hosted rather than linked from Google Fonts: that would send visitor IPs to Google, gains nothing from a
+ * shared cache (browsers partition it), and adds a render-blocking stylesheet. The file is
+ * @fontsource-variable/archivo 5.3.0's Latin weight-axis subset, preloaded in index.html. Arrows other than ↑ and ↓
+ * are outside the subset and render in the fallback font.
+ */
+@font-face {
+  font-family: "Archivo";
+  src: url("/fonts/archivo-latin-var.woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/*
+ * Tokens from the design handoff (tasks/design-handoff/tokens.css), where each color pair's contrast was measured in
+ * a browser. Tailwind's default palette and text sizes are cleared so components can only use these; raw colors
+ * belong in this file only.
  */
 @theme {
   --color-*: initial;
 
-  --color-bg: #101210;
-  --color-surface: #161a17;
-  --color-surface-raised: #25312a;
-  --color-border: rgb(244 247 242 / 0.12);
+  --color-background: #0b0b10;
+  --color-surface: #14141c;
+  /* Row hover, wells, chart tracks. */
+  --color-raised-surface: #1e1e29;
+  /* 1.31:1 on surface: hairlines only, never text. */
+  --color-border: #2c2c3a;
 
-  --color-text: #f4f7f2;
-  --color-muted: #aeb9b0;
-  --color-subtle: #95a79a;
+  --color-text: #ededf2;
+  --color-muted: #a6a6b8;
+  /* 4.6:1 on surface, the floor: labels only. */
+  --color-subtle: #818199;
 
-  --color-accent: #1ed760;
-  --color-accent-bright: #7df3a4;
-  --color-on-accent: #07140b;
-  --color-highlight: #f7d46a;
-  --color-accent-soft: #d8f6df;
+  /* A fill color: about 4:1 on background fails body text, so accent-colored text uses bright-accent. */
+  --color-accent: #6d5ae6;
+  --color-bright-accent: #a79bff;
+  --color-on-accent: #ffffff;
+  --color-soft-accent: rgb(109 90 230 / 0.16);
 
-  --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
+  /* Attention, never decoration: search matches, chart peaks, notices worth reading. */
+  --color-highlight: #ffb454;
+  --color-soft-highlight: rgb(255 180 84 / 0.18);
+
+  /* Solid, not translucent: an alpha tint over a near-black card can't reach 3:1. */
+  --color-chart-fill: #6e6e92;
+  --color-chart-peak: #6d5ae6;
+
+  /* Letter avatars: four hues picked by name hash, each ink measured against its own composited tint. */
+  --color-avatar-tint-1: rgb(109 90 230 / 0.22);
+  --color-avatar-ink-1: #a79bff;
+  --color-avatar-tint-2: rgb(64 196 224 / 0.2);
+  --color-avatar-ink-2: #7fdcee;
+  --color-avatar-tint-3: rgb(255 110 130 / 0.2);
+  --color-avatar-ink-3: #ff9fac;
+  --color-avatar-tint-4: rgb(255 180 84 / 0.2);
+  --color-avatar-ink-4: #ffc97a;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  --text-*: initial;
+  --text-2xs: 10px;
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-md: 13px;
+  --text-base: 14px;
+  --text-lg: 16px;
+  --text-xl: 19px;
+  --text-2xl: 23px;
+  --text-3xl: 28px;
+  --text-4xl: 34px;
+  --text-5xl: 42px;
+
+  --font-sans: Archivo, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --ease-settled: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --duration-morph: 240ms;
+  --duration-fade: 120ms;
+
+  --animate-shimmer: shimmer 1.25s linear infinite;
+
+  @keyframes shimmer {
+    from {
+      background-position: -380px 0;
+    }
+    to {
+      background-position: 380px 0;
+    }
+  }
 }
 
 @layer base {
@@ -33,18 +101,43 @@
 
   body {
     min-height: 100svh;
-    background:
-      linear-gradient(120deg, rgb(35 175 93 / 0.18), transparent 35%),
-      linear-gradient(210deg, rgb(255 202 83 / 0.12), transparent 34%),
-      var(--color-bg);
+    background: var(--color-background);
     color: var(--color-text);
+    font-size: var(--text-base);
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
   }
 
-  :focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 2px;
+  ::selection {
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+  }
+
+  /*
+   * Inset, because the virtualized lists are overflow containers that would clip an outer ring. focus-visible, so a
+   * mouse click never leaves a ring behind.
+   */
+  :where(a, button, input, [tabindex]):focus {
+    outline: none;
+  }
+
+  :where(a, button, input, [tabindex]):focus-visible {
+    outline: none;
+    box-shadow:
+      inset 0 0 0 2px var(--color-accent),
+      0 0 0 1px var(--color-bright-accent);
+    border-radius: var(--radius-md);
+  }
+
+  /* Every animation either disappears or becomes instant; nothing is merely slowed. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation: none !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
+    }
   }
 }

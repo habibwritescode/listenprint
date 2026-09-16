@@ -23,7 +23,7 @@ export function ConnectSpotifyButton({ currentUrl, busy, label = 'Connect Spotif
     return (
       <p className="text-muted">
         Spotify doesn't accept sign-ins from localhost.{' '}
-        <a href={loopback} className="font-medium text-accent hover:text-accent-bright">
+        <a href={loopback} className="font-medium text-bright-accent hover:text-bright-accent">
           Open on 127.0.0.1
         </a>
       </p>

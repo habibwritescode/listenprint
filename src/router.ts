@@ -10,6 +10,7 @@ import {
 import type { RouterHistory, SearchSchemaInput } from '@tanstack/react-router'
 import type { QueryClient } from '@tanstack/react-query'
 import type { AuthSession } from './auth/session.ts'
+import type { LibrarySession } from './spotify/library-session.ts'
 import { ErrorFallback } from './components/ErrorFallback.tsx'
 import { demoLibraryQueryOptions } from './demo/demo-library-query.ts'
 import { DEFAULT_SORT_ORDER, isSortOrder } from './library/presentation.ts'
@@ -28,6 +29,7 @@ import { parseSearch, stringifySearch } from './search-params.ts'
 export interface RouterContext {
   queryClient: QueryClient
   auth: AuthSession
+  library: LibrarySession
 }
 
 interface CallbackSearch {
@@ -128,14 +130,15 @@ const routeTree = rootRoute.addChildren([rankingsRoute, artistRoute, demoRoute, 
 interface AppRouterOptions {
   queryClient: QueryClient
   auth: AuthSession
+  library: LibrarySession
   history?: RouterHistory
 }
 
-export function createAppRouter({ queryClient, auth, history }: AppRouterOptions) {
+export function createAppRouter({ queryClient, auth, library, history }: AppRouterOptions) {
   return createRouter({
     routeTree,
     history,
-    context: { queryClient, auth },
+    context: { queryClient, auth, library },
     parseSearch,
     stringifySearch,
     defaultErrorComponent: ErrorFallback,

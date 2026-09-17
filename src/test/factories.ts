@@ -18,6 +18,7 @@ export function makeTrack(overrides: Partial<LibraryTrack> = {}): LibraryTrack {
     id,
     name: `Track ${id}`,
     addedAt: '2026-01-01T00:00:00.000Z',
+    albumName: null,
     albumImageUrl: null,
     artists: [makeArtist()],
     ...overrides,

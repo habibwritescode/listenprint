@@ -33,6 +33,9 @@ export default defineConfig({
         'src/hooks/scroll-visibility.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
         'src/hooks/roving-focus.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
         'src/auth/**': { statements: 100, branches: 100, functions: 100, lines: 100 },
+        'src/spotify/!(indexeddb-store).ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+        // IndexedDB's own request and transaction error callbacks can't be triggered through fake-indexeddb.
+        'src/spotify/indexeddb-store.ts': { statements: 95, branches: 100, functions: 91, lines: 100 },
       },
     },
   },

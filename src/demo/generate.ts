@@ -233,6 +233,7 @@ function localTrack(random: Random, artistName: string, serial: number, addedAt:
     id: `local:${uri}`,
     name,
     addedAt,
+    albumName: null,
     albumImageUrl: null,
     artists: [{ id: `local:${artistName}`, name: artistName }],
   }
@@ -304,6 +305,7 @@ export function generateDemoLibrary({
       id: spotifyLikeId(random, usedIds),
       name: trackTitle(random),
       addedAt: timestamps[index],
+      albumName: null,
       albumImageUrl: null,
       artists,
     })

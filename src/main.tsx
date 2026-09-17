@@ -6,10 +6,12 @@ import { createBrowserAuthSession } from './auth/browser.ts'
 import { AppErrorBoundary } from './components/AppErrorBoundary.tsx'
 import { queryClient } from './query-client.ts'
 import { createAppRouter } from './router.ts'
+import { createBrowserLibrarySession } from './spotify/browser.ts'
 import './index.css'
 
 const auth = createBrowserAuthSession(window)
-const router = createAppRouter({ queryClient, auth })
+const library = createBrowserLibrarySession({ auth, queryClient, env: window })
+const router = createAppRouter({ queryClient, auth, library })
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

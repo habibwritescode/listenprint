@@ -121,6 +121,7 @@ describe('generateDemoLibrary', () => {
           {
             "addedAt": "2026-08-31T13:30:01.626Z",
             "albumImageUrl": null,
+            "albumName": null,
             "artists": [
               {
                 "id": "KUTqztguNSZ8uFQg2sAN3z",
@@ -133,6 +134,7 @@ describe('generateDemoLibrary', () => {
           {
             "addedAt": "2026-08-31T09:23:25.217Z",
             "albumImageUrl": null,
+            "albumName": null,
             "artists": [
               {
                 "id": "PqKCEHywqS1pKeMpRwoCKs",
@@ -149,6 +151,7 @@ describe('generateDemoLibrary', () => {
           {
             "addedAt": "2026-08-30T23:05:07.875Z",
             "albumImageUrl": null,
+            "albumName": null,
             "artists": [
               {
                 "id": "TzWQk7NqbZ2bw0otJxBUNV",
@@ -184,6 +187,7 @@ describe('generateDemoLibrary', () => {
     it('produces tracks that satisfy the Library contract', () => {
       for (const track of library.tracks) {
         expect(track.name.length).toBeGreaterThan(0)
+        expect(track.albumName).toBeNull()
         expect(track.albumImageUrl).toBeNull()
         expect(new Date(track.addedAt).toISOString()).toBe(track.addedAt)
         expect(track.artists.length).toBeGreaterThanOrEqual(1)

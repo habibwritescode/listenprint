@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import type { AuthSession } from '../auth/session.ts'
 import type { RouterContext } from '../router.ts'
 import { createTestSession, signedInStorage } from '../test/auth-session.ts'
+import { createTestLibrarySession } from '../test/library-session.ts'
 import { useAuth } from './useAuth.ts'
 
 afterEach(cleanup)
@@ -24,10 +25,11 @@ function AuthProbe() {
 }
 
 function renderProbe(auth: AuthSession) {
+  const queryClient = new QueryClient()
   const router = createRouter({
     routeTree: createRootRouteWithContext<RouterContext>()({ component: AuthProbe }),
     history: createMemoryHistory({ initialEntries: ['/'] }),
-    context: { auth, queryClient: new QueryClient() },
+    context: { auth, queryClient, library: createTestLibrarySession({ auth, queryClient }).session },
   })
   return render(<RouterProvider router={router} />)
 }

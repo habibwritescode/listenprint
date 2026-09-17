@@ -17,9 +17,19 @@ export interface LibraryTrack {
   name: string
   /** When the track was liked, as an ISO 8601 string (a string keeps Library JSON-serializable). */
   addedAt: string
+  /** `null` when Spotify has none, and always in the demo, which generates no albums. */
+  albumName: string | null
   albumImageUrl: string | null
   /** Credit order as Spotify returns it; index 0 is the primary artist. */
   artists: ArtistRef[]
+}
+
+/** Fetched separately, one request per artist, for the top artists only. */
+export interface ArtistDetails {
+  id: string
+  imageUrl: string | null
+  /** Deprecated by Spotify and often empty. */
+  genres: string[]
 }
 
 export interface Library {

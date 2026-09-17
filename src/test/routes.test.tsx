@@ -80,6 +80,21 @@ describe('/demo search params', () => {
   )
 })
 
+describe('live route search params', () => {
+  it.each([
+    ['/?mode=primary&sort=alpha', '/', { mode: 'primary', sort: 'alpha' }, '?mode=primary&sort=alpha'],
+    ['/?mode=bogus&sort=count', '/', { mode: 'all', sort: 'count' }, ''],
+    ['/artist/abc123?mode=primary', '/artist/$artistId', { mode: 'primary', sort: 'count' }, '?mode=primary'],
+  ] as const)('resolves %s like the demo routes', async (url, routeId, search, searchStr) => {
+    const { router } = renderApp(url)
+
+    await waitFor(() => expect(router.state.status).toBe('idle'))
+
+    expect(router.state.matches.find((match) => match.routeId === routeId)?.search).toEqual(search)
+    expect(router.state.location.searchStr).toBe(searchStr)
+  })
+})
+
 describe('/demo sort', () => {
   function firstAlphaRowName() {
     const [first] = sortRankings(rankArtists(testLibrary.tracks, 'all'), 'alpha')

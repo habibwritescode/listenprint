@@ -5,6 +5,7 @@ import { shareOfLibrary, tiedRanks } from '../../library/presentation.ts'
 import type { SortOrder } from '../../library/presentation.ts'
 import type { ArtistRanking, RankingMode } from '../../library/types.ts'
 import { ArtistRow } from './ArtistRow.tsx'
+import type { LibraryBase } from './library-paths.ts'
 import { SortToggle } from './SortToggle.tsx'
 import { ARTIST_ROW_GRID } from './row-format.ts'
 
@@ -20,14 +21,18 @@ interface RankedArtistListProps {
   mode: RankingMode
   /** In `alpha`, rows arrive in name order and each rank still means the artist's place by count. */
   sort: SortOrder
+  basePath: LibraryBase
+  /** Artist photos by artist id, for the artists that have one. */
+  photos?: Readonly<Record<string, string>>
   /** The panel's heading, such as "1,412 artists in the sample library". */
   label: string
 }
 
 // React Compiler caches getVirtualItems() against the virtualizer instance, which never changes, so a
 // compiled list would never update on scroll. See src/test/virtualizer-jsdom.test.tsx.
-export function RankedArtistList({ rankings, leaderCount, trackCount, mode, sort, label }: RankedArtistListProps) {
+export function RankedArtistList(props: RankedArtistListProps) {
   'use no memo'
+  const { rankings, leaderCount, trackCount, mode, sort, basePath, photos, label } = props
   const [scrollMargin, setScrollMargin] = useState(0)
   const virtualizer = useWindowVirtualizer({
     count: rankings.length,
@@ -100,6 +105,8 @@ export function RankedArtistList({ rankings, leaderCount, trackCount, mode, sort
                     dimRank={sort === 'alpha'}
                     mode={mode}
                     sort={sort}
+                    basePath={basePath}
+                    photoUrl={photos?.[ranking.artist.id]}
                     tabIndex={item.index === tabbableIndex ? 0 : -1}
                   />
                 </li>

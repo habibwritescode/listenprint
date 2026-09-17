@@ -112,7 +112,7 @@ describe('FeaturedOnlyNotice', () => {
   it('explains the empty page and switches to all artists on the same artist, keeping the sort', async () => {
     const artist = makeArtist({ id: 'artist-a', name: 'Odile Ravel' })
 
-    renderWithRouter(<FeaturedOnlyNotice artist={artist} savedTracks={26} sort="alpha" />)
+    renderWithRouter(<FeaturedOnlyNotice artist={artist} savedTracks={26} sort="alpha" basePath="/demo" />)
 
     const title = 'Nothing to show in “primary artist only”'
     expect(await screen.findByRole('heading', { level: 2, name: title })).toBeDefined()
@@ -154,6 +154,19 @@ function stubMatchMedia(initial: boolean) {
 function rowHeights() {
   return screen.getAllByRole('listitem').map((item) => item.style.height)
 }
+
+describe('FeaturedOnlyNotice on a live library', () => {
+  it('links to the live artist page and ranking', async () => {
+    const artist = makeArtist({ id: 'artist-a', name: 'Odile Ravel' })
+
+    renderWithRouter(<FeaturedOnlyNotice artist={artist} savedTracks={2} sort="count" basePath="/" />)
+
+    expect((await screen.findByRole('link', { name: 'Switch to all artists' })).getAttribute('href')).toBe(
+      '/artist/artist-a?mode=all&sort=count',
+    )
+    expect(screen.getByRole('link', { name: 'Back to ranking' }).getAttribute('href')).toBe('/?mode=primary&sort=count')
+  })
+})
 
 describe('ArtistTrackList', () => {
   const lead = makeArtist({ id: 'lead', name: 'Pale Oxbow' })
@@ -242,6 +255,27 @@ describe('ArtistTrackList', () => {
     expect(document.activeElement).toBe(
       screen.getByRole('link', { name: 'Open Second Song in Spotify — opens in a new tab' }),
     )
+  })
+
+  it('adds an Album column, with album-letter tiles, when tracks have album names', async () => {
+    const tracks = [
+      makeTrack({ name: 'Low Orbit', albumName: 'Common Weather', artists: [lead] }),
+      makeTrack({ name: 'Wide Glass', albumName: null, artists: [lead] }),
+    ]
+    const { container } = renderTracks(tracks, 'spotify')
+
+    const [withAlbum, withoutAlbum] = await screen.findAllByRole('listitem')
+    expect(container.querySelector('[data-slot="track-columns"]')?.textContent).toContain('Album')
+    expect(within(withAlbum).getAllByText('Common Weather').length).toBeGreaterThan(0)
+    expect(withAlbum.querySelector('[data-slot="art"]')?.textContent).toBe('C')
+    expect(withoutAlbum.querySelector('[data-slot="art"]')?.textContent).toBe('W')
+  })
+
+  it('has no Album column when no track has an album name', async () => {
+    const { container } = renderTracks([makeTrack({ artists: [lead] })])
+
+    await screen.findAllByRole('listitem')
+    expect(container.querySelector('[data-slot="track-columns"]')?.textContent).not.toContain('Album')
   })
 
   it('paints album art over the letter tile when there is any', async () => {

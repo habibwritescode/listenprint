@@ -35,7 +35,7 @@ export function HeaderContent() {
   }
   if (liveArtist) {
     return (
-      <Link to="/" className={backLinkClass}>
+      <Link to="/" search={liveArtist.search} className={backLinkClass}>
         <BackLabel />
       </Link>
     )

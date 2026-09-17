@@ -7,13 +7,14 @@ interface ArtistHeaderProps {
   spotifyUrl: string | null
   /** Shown in the link's place when there is no link: a stated fact, never a dead button. */
   noLinkNote: string
+  photoUrl?: string | null
 }
 
 // The 96px tile is the same letter avatar as the 44px row tile, so a list-to-detail transition can scale one element.
-export function ArtistHeader({ artist, kicker, spotifyUrl, noLinkNote }: ArtistHeaderProps) {
+export function ArtistHeader({ artist, kicker, spotifyUrl, noLinkNote, photoUrl }: ArtistHeaderProps) {
   return (
     <header className="flex flex-wrap items-end gap-5">
-      <ArtistAvatar name={artist.name} size="header" />
+      <ArtistAvatar name={artist.name} size="header" imageUrl={photoUrl} />
       <div className="min-w-0 flex-[1_1_260px]">
         <p className="text-2xs tracking-[0.12em] text-subtle uppercase tabular-nums">{kicker}</p>
         <h1

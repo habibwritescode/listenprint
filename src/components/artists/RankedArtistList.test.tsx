@@ -62,6 +62,7 @@ function ManyArtists() {
       trackCount={ROW_COUNT}
       mode="all"
       sort="count"
+      basePath="/demo"
       label="2,000 artists"
     />
   )
@@ -108,7 +109,15 @@ describe('RankedArtistList', () => {
     )
 
     renderWithRouter(
-      <RankedArtistList rankings={rankings} leaderCount={2} trackCount={3} mode="primary" sort="count" label="3" />,
+      <RankedArtistList
+        rankings={rankings}
+        leaderCount={2}
+        trackCount={3}
+        mode="primary"
+        sort="count"
+        basePath="/demo"
+        label="3"
+      />,
     )
 
     const leader = await screen.findByRole('link', { name: 'Rank 1, Artist A, 2 liked songs, 66.7% of library' })
@@ -123,7 +132,15 @@ describe('RankedArtistList', () => {
     const rankings = rankArtists(tracks, 'all')
 
     renderWithRouter(
-      <RankedArtistList rankings={rankings} leaderCount={2} trackCount={4} mode="all" sort="count" label="3 artists" />,
+      <RankedArtistList
+        rankings={rankings}
+        leaderCount={2}
+        trackCount={4}
+        mode="all"
+        sort="count"
+        basePath="/demo"
+        label="3 artists"
+      />,
     )
 
     const [leader, tiedA, tiedB] = await screen.findAllByRole('listitem')
@@ -139,7 +156,15 @@ describe('RankedArtistList', () => {
     const rankings = sortRankings(rankArtists(tracks, 'all'), 'alpha')
 
     const { container } = renderWithRouter(
-      <RankedArtistList rankings={rankings} leaderCount={2} trackCount={4} mode="all" sort="alpha" label="3 artists" />,
+      <RankedArtistList
+        rankings={rankings}
+        leaderCount={2}
+        trackCount={4}
+        mode="all"
+        sort="alpha"
+        basePath="/demo"
+        label="3 artists"
+      />,
     )
 
     const rows = await screen.findAllByRole('listitem')
@@ -149,6 +174,30 @@ describe('RankedArtistList', () => {
     expect(screen.queryByText('=')).toBeNull()
     expect(container.querySelector('[data-slot="column-header"]')?.firstElementChild?.textContent).toBe('Rank')
     expect(screen.getByRole<HTMLInputElement>('radio', { name: 'A to Z' }).checked).toBe(true)
+  })
+
+  it('links rows under the live path and paints photos over the top artists', async () => {
+    const artistA = makeArtist({ id: 'artist-a', name: 'Artist A' })
+    const artistB = makeArtist({ id: 'artist-b', name: 'Artist B' })
+    const rankings = rankArtists([makeTrack({ artists: [artistA] }), makeTrack({ artists: [artistB] })], 'all')
+
+    renderWithRouter(
+      <RankedArtistList
+        rankings={rankings}
+        leaderCount={1}
+        trackCount={2}
+        mode="primary"
+        sort="alpha"
+        basePath="/"
+        label="2 artists"
+        photos={{ 'artist-a': 'https://i.scdn.co/image/a' }}
+      />,
+    )
+
+    const [rowA, rowB] = await screen.findAllByRole('listitem')
+    expect(within(rowA).getByRole('link').getAttribute('href')).toBe('/artist/artist-a?mode=primary&sort=alpha')
+    expect(rowA.querySelector('img')?.getAttribute('src')).toBe('https://i.scdn.co/image/a')
+    expect(rowB.querySelector('img')).toBeNull()
   })
 
   it('names the panel and hides the decorative column header', async () => {
@@ -164,7 +213,15 @@ describe('RankedArtistList', () => {
     const rankings = rankArtists([makeTrack({ artists: [artist] })], 'all')
 
     renderWithRouter(
-      <RankedArtistList rankings={rankings} leaderCount={4} trackCount={1} mode="all" sort="count" label="1 artist" />,
+      <RankedArtistList
+        rankings={rankings}
+        leaderCount={4}
+        trackCount={1}
+        mode="all"
+        sort="count"
+        basePath="/demo"
+        label="1 artist"
+      />,
     )
 
     const link = await screen.findByRole('link', { name: /^Rank 1, Artist A,/ })
@@ -173,7 +230,15 @@ describe('RankedArtistList', () => {
 
   it('shows an empty state when there are no rankings', async () => {
     renderWithRouter(
-      <RankedArtistList rankings={[]} leaderCount={0} trackCount={0} mode="all" sort="count" label="No artists yet" />,
+      <RankedArtistList
+        rankings={[]}
+        leaderCount={0}
+        trackCount={0}
+        mode="all"
+        sort="count"
+        basePath="/demo"
+        label="No artists yet"
+      />,
     )
 
     expect(await screen.findByText('No liked songs to rank')).toBeDefined()

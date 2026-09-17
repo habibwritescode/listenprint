@@ -13,6 +13,16 @@ import { ArtistAvatar } from './ArtistAvatar.tsx'
 const WIDE_ROW_HEIGHT = 64
 const NARROW_ROW_HEIGHT = 75
 
+// Written out in full so Tailwind finds each class. The Album column only exists at 741px and up; below that the album
+// joins the second line.
+const TRACK_GRIDS = {
+  'links-albums':
+    'grid-cols-[40px_minmax(0,1fr)_44px] min-[741px]:grid-cols-[28px_40px_minmax(0,1.4fr)_minmax(0,1fr)_92px_34px]',
+  'links-noAlbums': 'grid-cols-[40px_minmax(0,1fr)_44px] min-[741px]:grid-cols-[28px_40px_minmax(0,1fr)_92px_34px]',
+  'noLinks-albums': 'grid-cols-[40px_minmax(0,1fr)] min-[741px]:grid-cols-[28px_40px_minmax(0,1.4fr)_minmax(0,1fr)_92px]',
+  'noLinks-noAlbums': 'grid-cols-[40px_minmax(0,1fr)] min-[741px]:grid-cols-[28px_40px_minmax(0,1fr)_92px]',
+} as const
+
 // UTC so a like near midnight never shifts onto the neighbouring day.
 const likedDateFormat = new Intl.DateTimeFormat(undefined, {
   month: 'short',
@@ -72,9 +82,8 @@ export function ArtistTrackList({ tracks, artistId, artistName, source }: Artist
     tabbableIndex >= 0 && tabbableTrack && spotifyTrackUrl(tabbableTrack, source)
       ? tabbableIndex
       : (items.find((item) => spotifyTrackUrl(tracks[item.index], source) !== null)?.index ?? -1)
-  const grid = hasLinks
-    ? 'grid-cols-[40px_minmax(0,1fr)_44px] min-[741px]:grid-cols-[28px_40px_minmax(0,1fr)_92px_34px]'
-    : 'grid-cols-[40px_minmax(0,1fr)] min-[741px]:grid-cols-[28px_40px_minmax(0,1fr)_92px]'
+  const hasAlbums = tracks.some((track) => track.albumName !== null)
+  const grid = TRACK_GRIDS[`${hasLinks ? 'links' : 'noLinks'}-${hasAlbums ? 'albums' : 'noAlbums'}`]
   const artNote = source === 'demo' ? 'Sample library — no album art' : 'Album art from Spotify'
 
   return (
@@ -91,11 +100,13 @@ export function ArtistTrackList({ tracks, artistId, artistName, source }: Artist
       <div className="mt-3.25 overflow-hidden rounded-lg border border-border bg-surface">
         <div
           aria-hidden
+          data-slot="track-columns"
           className={`hidden gap-3.5 border-b border-border px-4 py-2 text-2xs tracking-[0.11em] text-subtle uppercase min-[741px]:grid ${grid}`}
         >
           <span>#</span>
           <span />
           <span>Track</span>
+          {hasAlbums && <span>Album</span>}
           <span className="text-right">Liked</span>
           {hasLinks && <span />}
         </div>
@@ -123,12 +134,8 @@ export function ArtistTrackList({ tracks, artistId, artistName, source }: Artist
                 <span aria-hidden className="hidden text-xs text-subtle tabular-nums min-[741px]:block">
                   {String(item.index + 1).padStart(2, '0')}
                 </span>
-                {/* The letter tile is the base layer, so slow or missing art leaves no hole. */}
-                <span className="relative size-10 overflow-hidden rounded-sm">
-                  <ArtistAvatar name={track.name} size="art" />
-                  {track.albumImageUrl && (
-                    <img src={track.albumImageUrl} alt="" loading="lazy" className="absolute inset-0 size-full object-cover" />
-                  )}
+                <span data-slot="art">
+                  <ArtistAvatar name={track.albumName ?? track.name} size="art" imageUrl={track.albumImageUrl} />
                 </span>
                 <span className="min-w-0">
                   <span className="block truncate text-md">{track.name}</span>
@@ -136,10 +143,14 @@ export function ArtistTrackList({ tracks, artistId, artistName, source }: Artist
                     {others.length > 0 && `with ${others.join(', ')}`}
                     <span className="min-[741px]:hidden">
                       {others.length > 0 && ' · '}
+                      {track.albumName && `${track.albumName} · `}
                       <LikedDate addedAt={track.addedAt} />
                     </span>
                   </span>
                 </span>
+                {hasAlbums && (
+                  <span className="hidden min-w-0 truncate text-sm text-muted min-[741px]:block">{track.albumName}</span>
+                )}
                 <LikedDate
                   addedAt={track.addedAt}
                   className="hidden text-right text-xs text-subtle tabular-nums min-[741px]:block"

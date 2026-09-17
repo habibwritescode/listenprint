@@ -68,15 +68,20 @@ const rootRoute = createRootRouteWithContext<RouterContext>()({
   notFoundComponent: NotFoundPage,
 })
 
+// Live and demo routes share the same `mode` and `sort` search params, stripped at their defaults.
 const rankingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
+  validateSearch: validateRankingSearch,
+  search: { middlewares: [stripSearchParams({ mode: DEFAULT_RANKING_MODE, sort: DEFAULT_SORT_ORDER })] },
   component: RankingsPage,
 })
 
 const artistRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/artist/$artistId',
+  validateSearch: validateRankingSearch,
+  search: { middlewares: [stripSearchParams({ mode: DEFAULT_RANKING_MODE, sort: DEFAULT_SORT_ORDER })] },
   component: ArtistPage,
 })
 

@@ -3,6 +3,8 @@ import { barWidthPercent } from '../../library/presentation.ts'
 import type { SortOrder } from '../../library/presentation.ts'
 import type { ArtistRanking, RankingMode } from '../../library/types.ts'
 import { ArtistAvatar } from './ArtistAvatar.tsx'
+import { artistPath } from './library-paths.ts'
+import type { LibraryBase } from './library-paths.ts'
 import { ARTIST_ROW_GRID, artistRowLabel, formatShare } from './row-format.ts'
 
 interface ArtistRowProps {
@@ -16,13 +18,17 @@ interface ArtistRowProps {
   dimRank: boolean
   mode: RankingMode
   sort: SortOrder
+  basePath: LibraryBase
+  /** Painted over the letter tile when the artist has one. */
+  photoUrl?: string
   /** 0 for the list's single Tab stop, -1 for every other row. */
   tabIndex: number
 }
 
 const countFormat = new Intl.NumberFormat()
 
-export function ArtistRow({ ranking, leaderCount, share, tied, dimRank, mode, sort, tabIndex }: ArtistRowProps) {
+export function ArtistRow(props: ArtistRowProps) {
+  const { ranking, leaderCount, share, tied, dimRank, mode, sort, basePath, photoUrl, tabIndex } = props
   const { artist, rank, count, tracks } = ranking
   const sample = tracks
     .slice(0, 3)
@@ -31,7 +37,7 @@ export function ArtistRow({ ranking, leaderCount, share, tied, dimRank, mode, so
 
   return (
     <Link
-      to="/demo/artist/$artistId"
+      to={artistPath(basePath)}
       params={{ artistId: artist.id }}
       search={{ mode, sort }}
       tabIndex={tabIndex}
@@ -42,7 +48,7 @@ export function ArtistRow({ ranking, leaderCount, share, tied, dimRank, mode, so
         {rank}
         {tied && <span className="text-[9px] text-highlight">=</span>}
       </span>
-      <ArtistAvatar name={artist.name} />
+      <ArtistAvatar name={artist.name} imageUrl={photoUrl} />
       <span aria-hidden className="min-w-0">
         <span className="block truncate text-base font-medium tracking-[-0.01em] text-text">{artist.name}</span>
         <span className="mt-1 block truncate text-sm text-subtle">{sample}</span>

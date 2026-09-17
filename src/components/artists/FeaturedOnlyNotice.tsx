@@ -2,18 +2,21 @@ import { Link } from '@tanstack/react-router'
 import type { SortOrder } from '../../library/presentation.ts'
 import type { ArtistRef } from '../../library/types.ts'
 import { ghostActionClass, primaryActionClass } from '../action-styles.ts'
+import { artistPath } from './library-paths.ts'
+import type { LibraryBase } from './library-paths.ts'
 
 interface FeaturedOnlyNoticeProps {
   artist: ArtistRef
   /** Every saved track crediting the artist, all of them as a featured artist. */
   savedTracks: number
   sort: SortOrder
+  basePath: LibraryBase
 }
 
 const countFormat = new Intl.NumberFormat()
 
 // Only the ranking part of the page is replaced, and the fix keeps you on this artist.
-export function FeaturedOnlyNotice({ artist, savedTracks, sort }: FeaturedOnlyNoticeProps) {
+export function FeaturedOnlyNotice({ artist, savedTracks, sort, basePath }: FeaturedOnlyNoticeProps) {
   const tracks = `${countFormat.format(savedTracks)} saved ${savedTracks === 1 ? 'track' : 'tracks'}`
 
   return (
@@ -32,7 +35,7 @@ export function FeaturedOnlyNotice({ artist, savedTracks, sort }: FeaturedOnlyNo
       </p>
       <div className="mt-4 flex flex-wrap gap-2.5">
         <Link
-          to="/demo/artist/$artistId"
+          to={artistPath(basePath)}
           params={{ artistId: artist.id }}
           search={{ mode: 'all', sort }}
           replace
@@ -40,7 +43,7 @@ export function FeaturedOnlyNotice({ artist, savedTracks, sort }: FeaturedOnlyNo
         >
           Switch to all artists
         </Link>
-        <Link to="/demo" search={{ mode: 'primary', sort }} className={ghostActionClass}>
+        <Link to={basePath} search={{ mode: 'primary', sort }} className={ghostActionClass}>
           Back to ranking
         </Link>
       </div>

@@ -153,6 +153,41 @@ html:active-view-transition-type(artist-open, artist-close) [data-artist-tile] {
   view-transition-class: artist-tile;
 }
 
+/*
+ * The sticky header gets its own layer, stacked on top. Named tiles are lifted above the page snapshot, which holds the
+ * header, so without this the tiles of rows scrolled under the header paint over it for the whole transition. Chrome
+ * stacks layers in document order, where the header comes first, so the z-index is needed too (checked in Chrome 152).
+ */
+html:active-view-transition-type(artist-open, artist-close) [data-site-header] {
+  view-transition-name: site-header;
+}
+
+html:active-view-transition-type(artist-open, artist-close)::view-transition-group(site-header) {
+  z-index: 1;
+}
+
+/*
+ * The scrolled list's header is opaque and the artist page's, at the top of the page, is transparent, so a plain
+ * cross-fade would show list rows through the header. Whichever header covers rows stays solid while they're visible:
+ * opening, the list's header holds until the list has mostly faded, then the two headers cross over in the second half;
+ * closing, the list's header shows at once, above the artist page's fading out.
+ */
+html:active-view-transition-type(artist-open)::view-transition-old(site-header) {
+  animation: view-fade-out var(--duration-fade) var(--ease-settled) var(--duration-fade) both;
+}
+
+html:active-view-transition-type(artist-open)::view-transition-new(site-header) {
+  animation: view-fade-in var(--duration-fade) var(--ease-settled) var(--duration-fade) both;
+}
+
+html:active-view-transition-type(artist-close)::view-transition-new(site-header) {
+  animation: none;
+}
+
+html:active-view-transition-type(artist-close)::view-transition-old(site-header) {
+  animation: view-fade-out var(--duration-fade) var(--ease-settled) both;
+}
+
 html:active-view-transition-type(artist-open, artist-close)::view-transition-group(*) {
   animation-duration: var(--duration-morph);
   animation-timing-function: var(--ease-settled);

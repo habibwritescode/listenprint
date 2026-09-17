@@ -14,6 +14,7 @@ export function SiteHeader({ children }: { children: ReactNode }) {
     <header
       ref={headerRef}
       data-testid="site-header"
+      data-site-header
       data-hidden={hidden ? '' : undefined}
       data-scrolled={scrolled ? '' : undefined}
       data-instant={instant ? '' : undefined}

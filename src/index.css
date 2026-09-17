@@ -141,3 +141,75 @@
     }
   }
 }
+
+/*
+ * List ↔ artist view transitions (src/navigation). The router starts them only for those navigations, typed
+ * artist-open or artist-close, and never under reduced motion. Tile names apply only while one runs, so no other
+ * navigation captures them. Pseudo-element rules attach to html directly: a space before ::view-transition-* would
+ * target descendants and match nothing.
+ */
+html:active-view-transition-type(artist-open, artist-close) [data-artist-tile] {
+  view-transition-name: var(--artist-tile);
+  view-transition-class: artist-tile;
+}
+
+html:active-view-transition-type(artist-open, artist-close)::view-transition-group(*) {
+  animation-duration: var(--duration-morph);
+  animation-timing-function: var(--ease-settled);
+}
+
+/*
+ * One tile in flight: the header's 96px snapshot, scaled, so the letter or photo never blurs and never doubles. Chrome
+ * doesn't match :not(:only-child) after these pseudo-elements, so tiles on both pages are set first and row tiles with
+ * no partner (other artists in the list) get their fade back through :only-child.
+ */
+html:active-view-transition-type(artist-open)::view-transition-old(.artist-tile),
+html:active-view-transition-type(artist-close)::view-transition-new(.artist-tile) {
+  animation: none;
+  opacity: 0;
+}
+
+html:active-view-transition-type(artist-open)::view-transition-new(.artist-tile),
+html:active-view-transition-type(artist-close)::view-transition-old(.artist-tile) {
+  animation: none;
+  opacity: 1;
+}
+
+html:active-view-transition-type(artist-open, artist-close)::view-transition-old(.artist-tile):only-child {
+  animation: view-fade-out var(--duration-morph) var(--ease-settled) both;
+  opacity: 1;
+}
+
+html:active-view-transition-type(artist-open, artist-close)::view-transition-new(.artist-tile):only-child {
+  animation: view-fade-in var(--duration-morph) var(--ease-settled) both;
+  opacity: 1;
+}
+
+/* The page under the tile: the list fades out while the artist page fades in over the second half, and back. */
+html:active-view-transition-type(artist-open)::view-transition-old(root) {
+  animation: view-fade-out var(--duration-morph) var(--ease-settled) both;
+}
+
+html:active-view-transition-type(artist-open)::view-transition-new(root) {
+  animation: view-fade-in var(--duration-fade) var(--ease-settled) var(--duration-fade) both;
+}
+
+html:active-view-transition-type(artist-close)::view-transition-old(root) {
+  animation: view-fade-out var(--duration-fade) var(--ease-settled) both;
+}
+
+html:active-view-transition-type(artist-close)::view-transition-new(root) {
+  animation: view-fade-in var(--duration-morph) var(--ease-settled) both;
+}
+
+@keyframes view-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes view-fade-in {
+  from {
+    opacity: 0;
+  }
+}

@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { useId } from 'react'
 import { barWidthPercent } from '../../library/presentation.ts'
+import { artistTileName } from '../../navigation/view-transitions.ts'
 import type { SortOrder } from '../../library/presentation.ts'
 import type { ArtistRanking, RankingMode } from '../../library/types.ts'
 import { ArtistAvatar } from './ArtistAvatar.tsx'
@@ -48,7 +49,7 @@ export function ArtistRow(props: ArtistRowProps) {
         {rank}
         {tied && <span className="text-[9px] text-highlight">=</span>}
       </span>
-      <ArtistAvatar name={artist.name} imageUrl={photoUrl} />
+      <ArtistAvatar name={artist.name} imageUrl={photoUrl} transitionName={artistTileName(artist.id)} />
       <span className="min-w-0">
         <Link
           to={artistPath(basePath)}

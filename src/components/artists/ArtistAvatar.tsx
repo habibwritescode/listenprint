@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { CSSProperties } from 'react'
 import { artistInitial, avatarTone } from '../../library/presentation.ts'
 import type { AvatarTone } from '../../library/presentation.ts'
 
@@ -7,6 +8,8 @@ interface ArtistAvatarProps {
   size?: keyof typeof SIZE_CLASSES
   /** A photo painted over the letter tile. */
   imageUrl?: string | null
+  /** The list ↔ artist view transition moves the tile with this name (`artistTileName`). */
+  transitionName?: string
 }
 
 const SIZE_CLASSES = {
@@ -30,13 +33,16 @@ type PhotoResult = { url: string; state: 'loaded' | 'failed' }
  * The letter tile is the default visual, not a placeholder: the demo has no images at all. A photo paints over it, so
  * a slow or failed one costs nothing: no broken-image icon, no reflow, no retry.
  */
-export function ArtistAvatar({ name, size = 'row', imageUrl = null }: ArtistAvatarProps) {
+export function ArtistAvatar({ name, size = 'row', imageUrl = null, transitionName }: ArtistAvatarProps) {
   const [result, setResult] = useState<PhotoResult | null>(null)
   const photoState = imageUrl === null ? null : result?.url === imageUrl ? result.state : 'loading'
 
   return (
     <span
       aria-hidden
+      // Only a custom property: index.css applies it as the view-transition-name while a list ↔ artist transition runs.
+      data-artist-tile={transitionName === undefined ? undefined : ''}
+      style={transitionName === undefined ? undefined : ({ '--artist-tile': transitionName } as CSSProperties)}
       className={`relative grid shrink-0 place-items-center overflow-hidden font-semibold ${TONE_CLASSES[avatarTone(name)]} ${SIZE_CLASSES[size]}`}
     >
       {artistInitial(name)}

@@ -59,4 +59,17 @@ describe('ArtistAvatar', () => {
 
     expect(parts(container).image?.getAttribute('src')).toBe('https://i.scdn.co/image/b')
   })
+
+  // The list ↔ artist view transition moves the tile with this name; the stylesheet applies it only during one.
+  it('carries a view transition name only when given one', () => {
+    const named = render(<ArtistAvatar name="Velvet Harbor" transitionName="artist-abc" />)
+    const tile = parts(named.container).tile
+    expect(tile.style.getPropertyValue('--artist-tile')).toBe('artist-abc')
+    expect(tile.hasAttribute('data-artist-tile')).toBe(true)
+    cleanup()
+
+    const plain = parts(render(<ArtistAvatar name="Velvet Harbor" size="art" />).container).tile
+    expect(plain.style.getPropertyValue('--artist-tile')).toBe('')
+    expect(plain.hasAttribute('data-artist-tile')).toBe(false)
+  })
 })

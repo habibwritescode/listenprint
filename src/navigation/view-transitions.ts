@@ -25,3 +25,12 @@ export function artistTransitionTypes({ fromLocation, toLocation }: LocationChan
   if (!from || !to || from.base !== to.base || from.kind === to.kind) return false
   return [to.kind === 'artist' ? 'artist-open' : 'artist-close']
 }
+
+/**
+ * The tile's `view-transition-name` for an artist. Local-file artist ids hold whatever the file says, so every
+ * character outside `[A-Za-z0-9-]`, underscore included, becomes `_<hex>_`: always a valid identifier, and no two ids
+ * collide.
+ */
+export function artistTileName(artistId: string): string {
+  return `artist-${artistId.replace(/[^A-Za-z0-9-]/gu, (character) => `_${character.codePointAt(0)!.toString(16)}_`)}`
+}

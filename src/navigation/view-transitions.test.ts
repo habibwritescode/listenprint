@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { artistTransitionTypes } from './view-transitions.ts'
+import { artistTileName, artistTransitionTypes } from './view-transitions.ts'
 
 function change(from: string | undefined, to: string) {
   return { fromLocation: from === undefined ? undefined : { pathname: from }, toLocation: { pathname: to } }
@@ -45,5 +45,27 @@ describe('artistTransitionTypes', () => {
     expect(artistTransitionTypes(change('/', '/nowhere'))).toBe(false)
     expect(artistTransitionTypes(change('/demo/artist/abc/extra', '/demo'))).toBe(false)
     expect(artistTransitionTypes(change(undefined, '/demo/artist/abc'))).toBe(false)
+  })
+})
+
+describe('artistTileName', () => {
+  const identifier = /^-?[A-Za-z_][A-Za-z0-9_-]*$/
+
+  it('prefixes Spotify ids, which are already safe', () => {
+    expect(artistTileName('4q3ewBCX7sLwd24euuV69X')).toBe('artist-4q3ewBCX7sLwd24euuV69X')
+  })
+
+  // Local-file artists are named by whatever the file says, and a view-transition-name must be a CSS identifier.
+  it('escapes every other character into a valid identifier', () => {
+    for (const id of ['local:My Band', 'Björk & Co.', '1999', '🎸 riff', 'a_b', '']) {
+      expect(artistTileName(id)).toMatch(identifier)
+    }
+    expect(artistTileName('local:My Band')).toBe('artist-local_3a_My_20_Band')
+    expect(artistTileName('🎸')).toBe('artist-_1f3b8_')
+  })
+
+  it('never gives two ids the same name', () => {
+    expect(artistTileName('a:b')).not.toBe(artistTileName('a_3a_b'))
+    expect(artistTileName('a b')).not.toBe(artistTileName('a_20_b'))
   })
 })

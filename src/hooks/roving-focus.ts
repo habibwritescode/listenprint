@@ -1,9 +1,18 @@
-export function rovingTargetIndex(key: string, currentIndex: number, count: number): number | null {
+export type RovingOrientation = 'vertical' | 'horizontal'
+
+export function rovingTargetIndex(
+  key: string,
+  currentIndex: number,
+  count: number,
+  orientation: RovingOrientation = 'vertical',
+): number | null {
   if (count === 0) return null
+  const next = orientation === 'vertical' ? 'ArrowDown' : 'ArrowRight'
+  const previous = orientation === 'vertical' ? 'ArrowUp' : 'ArrowLeft'
   switch (key) {
-    case 'ArrowDown':
+    case next:
       return Math.min(currentIndex + 1, count - 1)
-    case 'ArrowUp':
+    case previous:
       return Math.max(currentIndex - 1, 0)
     case 'Home':
       return 0

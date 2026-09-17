@@ -17,6 +17,11 @@ describe('rovingTargetIndex', () => {
     expect(rovingTargetIndex('End', 5, 10)).toBe(9)
   })
 
+  it('ignores left and right in a vertical list', () => {
+    expect(rovingTargetIndex('ArrowRight', 0, 3)).toBeNull()
+    expect(rovingTargetIndex('ArrowLeft', 2, 3)).toBeNull()
+  })
+
   it('ignores other keys', () => {
     expect(rovingTargetIndex('Tab', 5, 10)).toBeNull()
     expect(rovingTargetIndex('Enter', 5, 10)).toBeNull()
@@ -24,6 +29,21 @@ describe('rovingTargetIndex', () => {
 
   it('does nothing for an empty list', () => {
     expect(rovingTargetIndex('ArrowDown', 0, 0)).toBeNull()
+  })
+})
+
+describe('rovingTargetIndex across a horizontal row', () => {
+  // The timeline's bars run left to right, so its arrows are the horizontal pair.
+  it('moves with left and right, and ignores up and down', () => {
+    expect(rovingTargetIndex('ArrowRight', 0, 3, 'horizontal')).toBe(1)
+    expect(rovingTargetIndex('ArrowLeft', 2, 3, 'horizontal')).toBe(1)
+    expect(rovingTargetIndex('ArrowDown', 0, 3, 'horizontal')).toBeNull()
+    expect(rovingTargetIndex('ArrowUp', 2, 3, 'horizontal')).toBeNull()
+  })
+
+  it('still jumps to the ends with Home and End', () => {
+    expect(rovingTargetIndex('End', 0, 3, 'horizontal')).toBe(2)
+    expect(rovingTargetIndex('Home', 2, 3, 'horizontal')).toBe(0)
   })
 })
 

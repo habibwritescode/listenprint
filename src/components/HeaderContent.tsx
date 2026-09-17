@@ -1,7 +1,9 @@
 import { Link, useMatch } from '@tanstack/react-router'
 import { useLibraryChrome } from '../hooks/useLibraryChrome.ts'
+import { AnalyticsNav } from './AnalyticsNav.tsx'
 import { BackToRanking } from './BackToRanking.tsx'
 import { SampleDataChip } from './SampleDataChip.tsx'
+import { GrainToggle } from './analytics/GrainToggle.tsx'
 import { RankingModeToggle } from './artists/RankingModeToggle.tsx'
 import { HeaderIdentity } from './auth/HeaderIdentity.tsx'
 
@@ -15,6 +17,14 @@ export function HeaderContent() {
   const { hasLibrary, refreshing } = useLibraryChrome()
   const demoArtist = useMatch({ from: '/demo/artist/$artistId', shouldThrow: false })
   const liveArtist = useMatch({ from: '/artist/$artistId', shouldThrow: false })
+  const genres = useMatch({ from: '/genres', shouldThrow: false })
+  const timeline = useMatch({ from: '/timeline', shouldThrow: false })
+  const demoGenres = useMatch({ from: '/demo/genres', shouldThrow: false })
+  const demoTimeline = useMatch({ from: '/demo/timeline', shouldThrow: false })
+  const demo = demoList ?? demoGenres ?? demoTimeline
+  const timelineMatch = timeline ?? demoTimeline
+  // The nav needs a library to lead to: signed out, or before a scan, the home page is the only useful view.
+  const nav = demo ?? genres ?? timeline ?? (hasLibrary ? home : null)
 
   if (demoArtist) {
     return (
@@ -35,9 +45,17 @@ export function HeaderContent() {
         <span aria-hidden className="size-2.75 rounded-[3px] bg-accent" />
         listenprint
       </Link>
-      {demoList && <SampleDataChip />}
+      {demo && <SampleDataChip />}
       <span className="flex-1" />
+      {timelineMatch && (
+        <GrainToggle
+          grain={timelineMatch.search.grain}
+          basePath={demoTimeline ? '/demo/timeline' : '/timeline'}
+        />
+      )}
       {demoList && <RankingModeToggle mode={demoList.search.mode} basePath="/demo" />}
+      {demoGenres && <RankingModeToggle mode={demoGenres.search.mode} basePath="/demo/genres" />}
+      {genres && <RankingModeToggle mode={genres.search.mode} basePath="/genres" />}
       {home && hasLibrary && (
         // Dimmed while a refresh runs: the pills still work, on the ranking from the last scan.
         <div data-stale={refreshing ? '' : undefined} className="transition-opacity data-stale:opacity-55">
@@ -45,6 +63,9 @@ export function HeaderContent() {
         </div>
       )}
       <HeaderIdentity />
+      {nav && (
+        <AnalyticsNav basePath={demo ? '/demo' : '/'} search={{ mode: nav.search.mode, sort: nav.search.sort }} />
+      )}
     </>
   )
 }

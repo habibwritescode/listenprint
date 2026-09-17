@@ -4,7 +4,8 @@ import type { LibraryBase } from './library-paths.ts'
 
 interface RankingModeToggleProps {
   mode: RankingMode
-  basePath: LibraryBase
+  /** The route the toggle stays on: the ranking, or the genre breakdown, which reads the same mode. */
+  basePath: LibraryBase | '/genres' | '/demo/genres'
 }
 
 // The visible label is one word; the accessible name starts with it, so voice control still matches. One text node,

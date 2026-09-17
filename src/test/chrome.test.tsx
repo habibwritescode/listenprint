@@ -18,8 +18,8 @@ function siteHeader() {
 }
 
 describe('site header', () => {
-  it('shows the wordmark, the sample-data chip and the mode pills on /demo, with no nav links', async () => {
-    const { container } = renderApp('/demo?mode=primary')
+  it('shows the wordmark, the sample-data chip, the mode pills and the library views on /demo', async () => {
+    renderApp('/demo?mode=primary')
     await screen.findByRole('list', { name: 'Artists ranked by liked songs' })
     const header = within(siteHeader())
 
@@ -27,8 +27,13 @@ describe('site header', () => {
     expect(header.getByText('Sample data')).toBeDefined()
     expect(header.getByRole('group', { name: 'Ranking mode' })).toBeDefined()
     expect(header.getByRole<HTMLInputElement>('radio', { name: 'Primary artist only' }).checked).toBe(true)
-    expect(header.queryByRole('navigation')).toBeNull()
-    await expectNoAxeViolations(container)
+    expect(header.getAllByRole('link').map((link) => link.textContent)).toEqual([
+      'listenprint',
+      'Artists',
+      'Genres',
+      'Timeline',
+    ])
+    await expectNoAxeViolations(siteHeader())
   })
 
   it('has no chip or mode pills on the home page', async () => {
@@ -45,7 +50,7 @@ describe('site header', () => {
 describe('back bar on artist pages', () => {
   it('replaces the header on a demo artist page, keeping the mode and the chip', async () => {
     const [top] = rankArtists(testLibrary.tracks, 'primary')
-    const { container } = renderApp(`/demo/artist/${top.artist.id}?mode=primary&sort=alpha`)
+    renderApp(`/demo/artist/${top.artist.id}?mode=primary&sort=alpha`)
     await screen.findByRole('heading', { level: 1, name: top.artist.name })
     const bar = within(siteHeader())
 
@@ -54,7 +59,7 @@ describe('back bar on artist pages', () => {
     expect(bar.getByText('Sample data')).toBeDefined()
     expect(bar.queryByRole('link', { name: 'listenprint' })).toBeNull()
     expect(bar.queryByRole('group', { name: 'Ranking mode' })).toBeNull()
-    await expectNoAxeViolations(container)
+    await expectNoAxeViolations(siteHeader())
   })
 
   it('goes back to the home page from a live artist page, with no chip', async () => {

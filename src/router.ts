@@ -13,10 +13,12 @@ import type { AuthSession } from './auth/session.ts'
 import type { ViewTransitionSetting } from './navigation/browser.ts'
 import type { LibrarySession } from './spotify/library-session.ts'
 import { ErrorFallback } from './components/ErrorFallback.tsx'
-import { demoLibraryQueryOptions } from './demo/demo-library-query.ts'
+import { demoGenresQueryOptions, demoLibraryQueryOptions } from './demo/demo-library-query.ts'
 import { DEFAULT_SORT_ORDER, isSortOrder } from './library/presentation.ts'
 import type { SortOrder } from './library/presentation.ts'
 import { DEFAULT_RANKING_MODE, artistTracks, isRankingMode } from './library/rankings.ts'
+import { DEFAULT_TIMELINE_GRAIN, isTimelineGrain } from './library/timeline-grain.ts'
+import type { TimelineGrain } from './library/timeline-grain.ts'
 import type { RankingMode } from './library/types.ts'
 import { CallbackPending } from './routes/CallbackPending.tsx'
 import { DemoPagePending } from './routes/DemoPagePending.tsx'
@@ -53,6 +55,10 @@ interface RankingSearch {
   sort: SortOrder
 }
 
+interface TimelineSearch extends RankingSearch {
+  grain: TimelineGrain
+}
+
 // Artist pages carry the list's sort too, only so their back link can restore it.
 type RankingSearchInput = { mode?: RankingMode; sort?: SortOrder } & SearchSchemaInput
 
@@ -60,6 +66,14 @@ function validateRankingSearch(search: RankingSearchInput): RankingSearch {
   return {
     mode: isRankingMode(search.mode) ? search.mode : DEFAULT_RANKING_MODE,
     sort: isSortOrder(search.sort) ? search.sort : DEFAULT_SORT_ORDER,
+  }
+}
+
+// The timeline carries mode and sort only so the nav can hand them back to the ranking.
+function validateTimelineSearch(search: RankingSearchInput & { grain?: TimelineGrain }): TimelineSearch {
+  return {
+    ...validateRankingSearch(search),
+    grain: isTimelineGrain(search.grain) ? search.grain : DEFAULT_TIMELINE_GRAIN,
   }
 }
 
@@ -100,6 +114,55 @@ const demoRoute = createRoute({
   pendingComponent: DemoPagePending,
 })
 
+const genresRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/genres',
+  validateSearch: validateRankingSearch,
+  search: { middlewares: [stripSearchParams({ mode: DEFAULT_RANKING_MODE, sort: DEFAULT_SORT_ORDER })] },
+  component: lazyRouteComponent(() => import('./routes/GenresPage.tsx'), 'GenresPage'),
+})
+
+const timelineRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/timeline',
+  validateSearch: validateTimelineSearch,
+  search: {
+    middlewares: [
+      stripSearchParams({ mode: DEFAULT_RANKING_MODE, sort: DEFAULT_SORT_ORDER, grain: DEFAULT_TIMELINE_GRAIN }),
+    ],
+  },
+  component: lazyRouteComponent(() => import('./routes/TimelinePage.tsx'), 'TimelinePage'),
+})
+
+const demoGenresRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/demo/genres',
+  validateSearch: validateRankingSearch,
+  search: { middlewares: [stripSearchParams({ mode: DEFAULT_RANKING_MODE, sort: DEFAULT_SORT_ORDER })] },
+  loader: async ({ context }) => {
+    await Promise.all([
+      context.queryClient.ensureQueryData(demoLibraryQueryOptions),
+      context.queryClient.ensureQueryData(demoGenresQueryOptions),
+    ])
+  },
+  component: lazyRouteComponent(() => import('./routes/DemoGenresPage.tsx'), 'DemoGenresPage'),
+  pendingComponent: DemoPagePending,
+})
+
+const demoTimelineRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/demo/timeline',
+  validateSearch: validateTimelineSearch,
+  search: {
+    middlewares: [
+      stripSearchParams({ mode: DEFAULT_RANKING_MODE, sort: DEFAULT_SORT_ORDER, grain: DEFAULT_TIMELINE_GRAIN }),
+    ],
+  },
+  loader: ({ context }) => context.queryClient.ensureQueryData(demoLibraryQueryOptions),
+  component: lazyRouteComponent(() => import('./routes/DemoTimelinePage.tsx'), 'DemoTimelinePage'),
+  pendingComponent: DemoPagePending,
+})
+
 const demoArtistRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/demo/artist/$artistId',
@@ -133,7 +196,17 @@ const callbackRoute = createRoute({
   pendingMs: 0,
 })
 
-const routeTree = rootRoute.addChildren([rankingsRoute, artistRoute, demoRoute, demoArtistRoute, callbackRoute])
+const routeTree = rootRoute.addChildren([
+  rankingsRoute,
+  artistRoute,
+  genresRoute,
+  timelineRoute,
+  demoRoute,
+  demoGenresRoute,
+  demoTimelineRoute,
+  demoArtistRoute,
+  callbackRoute,
+])
 
 interface AppRouterOptions {
   queryClient: QueryClient

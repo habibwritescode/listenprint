@@ -17,7 +17,11 @@ setupSpotifyMocks()
 
 // Lazy route pieces load before any test, so a cold import can't miss findBy's timeout.
 beforeAll(async () => {
-  await Promise.all([import('../components/library/SignedInHome.tsx'), import('../components/library/LiveLibrary.tsx')])
+  await Promise.all([
+    import('../components/library/SignedInHome.tsx'),
+    import('../components/library/LiveLibrary.tsx'),
+    import('../components/library/LiveArtist.tsx'),
+  ])
 })
 
 afterEach(cleanup)
@@ -253,5 +257,74 @@ describe('home page, with a saved library', () => {
     renderApp('/', { auth: signedIn(), store })
 
     expect(await screen.findByText(/won’t be kept after this tab closes/)).toBeDefined()
+  })
+})
+
+describe('live artist page', () => {
+  it('shows the artist from the saved library, with Spotify links, albums and a photo', async () => {
+    const store = await storeWithLibrary()
+    await store.saveArtistDetails('saved-artist-0', {
+      details: { id: 'saved-artist-0', imageUrl: 'https://i.scdn.co/image/s0', genres: [] },
+      fetchedAt: Date.UTC(2026, 8, 10),
+    })
+    const requests = recordRequests()
+    const { container } = renderApp('/artist/saved-artist-0?mode=primary&sort=alpha', { auth: signedIn(), store })
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Saved Artist 0' })).toBeDefined()
+    expect(screen.getByText('Tied 1st of 3')).toBeDefined()
+    expect(screen.getByRole('link', { name: 'Open in Spotify' }).getAttribute('href')).toBe(
+      'https://open.spotify.com/artist/saved-artist-0',
+    )
+    const tracks = screen.getByRole('list', { name: 'Liked songs by Saved Artist 0' })
+    const trackLinks = within(tracks).getAllByRole('link', { name: /in Spotify — opens in a new tab$/ })
+    expect(trackLinks.length).toBeGreaterThan(0)
+    expect(container.querySelector('[data-slot="track-columns"]')?.textContent).toContain('Album')
+    expect(container.querySelector('header img, section img')?.getAttribute('src')).toBe('https://i.scdn.co/image/s0')
+    const back = within(screen.getByTestId('site-header')).getByRole('link', { name: 'Back to ranking' })
+    expect(back.getAttribute('href')).toBe('/?mode=primary&sort=alpha')
+    await expectNoAxeViolations(container)
+    expect(spotifyRequests(requests)).toHaveLength(0)
+  })
+
+  it('explains that artist pages need a signed-in library', async () => {
+    const { container } = renderApp('/artist/saved-artist-0')
+
+    const title = 'This page needs your Spotify library.'
+    expect(await screen.findByRole('heading', { level: 1, name: title })).toBeDefined()
+    const home = within(screen.getByRole('main')).getByRole('link', { name: 'Go to the home page' })
+    expect(home.getAttribute('href')).toBe('/')
+    expect(screen.getByRole('link', { name: 'Open the demo' }).getAttribute('href')).toBe('/demo')
+    await expectNoAxeViolations(container)
+  })
+
+  it('offers a scan when nothing is saved yet, and shows its progress on the home page', async () => {
+    const user = userEvent.setup()
+    const { handler, release } = pausingLibrary()
+    server.use(handler, artistResponds({}))
+    const { router, container } = renderApp('/artist/saved-artist-0', { auth: signedIn() })
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Your library isn’t loaded yet.' })).toBeDefined()
+    expect(screen.getByRole('link', { name: 'See the sample library' }).getAttribute('href')).toBe('/demo')
+    await expectNoAxeViolations(container)
+
+    await user.click(screen.getByRole('button', { name: 'Scan my library' }))
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'))
+    expect(await screen.findByText('Read 50 of 120 liked songs…')).toBeDefined()
+    release()
+  })
+
+  // Distinct from a 404: the route exists, but the id isn't in this library, such as a link from someone else's.
+  it('says when the artist is not in the saved library', async () => {
+    const { container } = renderApp('/artist/someone-elses-artist?mode=primary', {
+      auth: signedIn(),
+      store: await storeWithLibrary(),
+    })
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'That artist isn’t in your library.' })).toBeDefined()
+    expect(screen.getByText('/artist/someone-elses-artist')).toBeDefined()
+    const back = within(screen.getByRole('main')).getByRole('link', { name: 'Back to ranking' })
+    expect(back.getAttribute('href')).toBe('/?mode=primary')
+    await expectNoAxeViolations(container)
   })
 })

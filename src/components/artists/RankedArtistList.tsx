@@ -1,6 +1,7 @@
 import { useWindowVirtualizer } from '@tanstack/react-virtual'
 import { useCallback, useState } from 'react'
 import type { ReactNode } from 'react'
+import { useRestoredWindowOffset } from '../../hooks/useRestoredWindowOffset.ts'
 import { useRovingListFocus } from '../../hooks/useRovingListFocus.ts'
 import { shareOfLibrary, tiedRanks } from '../../library/presentation.ts'
 import type { SortOrder } from '../../library/presentation.ts'
@@ -39,11 +40,13 @@ export function RankedArtistList(props: RankedArtistListProps) {
   'use no memo'
   const { rankings, leaderCount, trackCount, mode, sort, basePath, photos, panelAction, emptyState, label } = props
   const [scrollMargin, setScrollMargin] = useState(0)
+  const initialOffset = useRestoredWindowOffset()
   const virtualizer = useWindowVirtualizer({
     count: rankings.length,
     estimateSize: () => ROW_HEIGHT,
     overscan: 10,
     scrollMargin,
+    initialOffset,
   })
   const items = virtualizer.getVirtualItems()
   const { attachList, tabbableIndex, onKeyDown, onFocus } = useRovingListFocus({

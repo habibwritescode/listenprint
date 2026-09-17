@@ -1,6 +1,7 @@
 import { useWindowVirtualizer } from '@tanstack/react-virtual'
 import { useCallback, useEffect, useState } from 'react'
 import { useMediaQuery } from '../../hooks/useMediaQuery.ts'
+import { useRestoredWindowOffset } from '../../hooks/useRestoredWindowOffset.ts'
 import { useRovingListFocus } from '../../hooks/useRovingListFocus.ts'
 import { spotifyTrackUrl } from '../../library/presentation.ts'
 import type { Library, LibraryTrack } from '../../library/types.ts'
@@ -52,11 +53,13 @@ export function ArtistTrackList({ tracks, artistId, artistName, source }: Artist
   'use no memo'
   const rowHeight = useMediaQuery('(min-width: 741px)') ? WIDE_ROW_HEIGHT : NARROW_ROW_HEIGHT
   const [scrollMargin, setScrollMargin] = useState(0)
+  const initialOffset = useRestoredWindowOffset()
   const virtualizer = useWindowVirtualizer({
     count: tracks.length,
     estimateSize: () => rowHeight,
     overscan: 10,
     scrollMargin,
+    initialOffset,
   })
   // Sizes are cached per row, so crossing the breakpoint has to discard them.
   useEffect(() => {

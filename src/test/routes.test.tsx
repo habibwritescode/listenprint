@@ -281,6 +281,35 @@ describe('list to detail navigation', () => {
     vi.restoreAllMocks()
   })
 
+  // The virtualizer scrolls the window to its starting offset when it mounts, so it must start from the saved position.
+  it('starts the virtualized list at the restored position instead of scrolling away from it', async () => {
+    const user = userEvent.setup()
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(((options?: ScrollToOptions) => {
+      if (typeof options === 'object' && options.top !== undefined) scrollWindowTo(options.top)
+    }) as typeof window.scrollTo)
+    renderApp('/demo')
+    const list = await screen.findByRole('list', { name: 'Artists ranked by liked songs' })
+    scrollWindowTo(3_080)
+
+    await user.click(within(list).getAllByRole('link')[0])
+    await screen.findByRole('link', { name: 'Back to ranking' })
+    scrollTo.mockClear()
+
+    await user.click(screen.getByRole('link', { name: 'Back to ranking' }))
+    await screen.findByRole('list', { name: 'Artists ranked by liked songs' })
+
+    await waitFor(() => expect(scrollTo).toHaveBeenCalled())
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    // Every scroll lands on the saved position: after a reload the router can restore before the list mounts, so a
+    // mount-time scroll to anywhere else would win.
+    expect(scrollTo.mock.calls.map(([options]) => (options as ScrollToOptions).top)).toEqual(
+      scrollTo.mock.calls.map(() => 3_080),
+    )
+    expect(window.scrollY).toBe(3_080)
+    scrollWindowTo(0)
+    vi.restoreAllMocks()
+  })
+
   // Opened from a shared link there is no list behind the page to go back to.
   it('opens the ranking as a new page when the artist page was not reached from it', async () => {
     const user = userEvent.setup()

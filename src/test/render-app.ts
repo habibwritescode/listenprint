@@ -5,6 +5,7 @@ import { createElement } from 'react'
 import type { AuthSession } from '../auth/session.ts'
 import { demoLibraryQueryOptions } from '../demo/demo-library-query.ts'
 import { generateDemoLibrary } from '../demo/generate.ts'
+import type { ViewTransitionSetting } from '../navigation/browser.ts'
 import { createAppRouter } from '../router.ts'
 import type { LibraryStore } from '../spotify/library-store.ts'
 import { createTestSession } from './auth-session.ts'
@@ -17,14 +18,16 @@ interface RenderAppOptions {
   auth?: AuthSession
   /** The saved Spotify library; defaults to an empty memory store. */
   store?: LibraryStore
+  /** Off by default, as in a browser without view transition types. */
+  viewTransition?: ViewTransitionSetting
 }
 
-export function renderApp(url: string, { auth = createTestSession().session, store }: RenderAppOptions = {}) {
+export function renderApp(url: string, { auth = createTestSession().session, store, viewTransition }: RenderAppOptions = {}) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   queryClient.setQueryData(demoLibraryQueryOptions.queryKey, testLibrary)
   const library = createTestLibrarySession({ auth, queryClient, store })
   const history = createMemoryHistory({ initialEntries: [url] })
-  const router = createAppRouter({ queryClient, auth, library: library.session, history })
+  const router = createAppRouter({ queryClient, auth, library: library.session, history, viewTransition })
 
   const app = createElement(QueryClientProvider, { client: queryClient }, createElement(RouterProvider, { router }))
   const view = render(app)

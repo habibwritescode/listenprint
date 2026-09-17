@@ -10,6 +10,7 @@ import {
 import type { RouterHistory, SearchSchemaInput } from '@tanstack/react-router'
 import type { QueryClient } from '@tanstack/react-query'
 import type { AuthSession } from './auth/session.ts'
+import type { ViewTransitionSetting } from './navigation/browser.ts'
 import type { LibrarySession } from './spotify/library-session.ts'
 import { ErrorFallback } from './components/ErrorFallback.tsx'
 import { demoLibraryQueryOptions } from './demo/demo-library-query.ts'
@@ -137,9 +138,11 @@ interface AppRouterOptions {
   auth: AuthSession
   library: LibrarySession
   history?: RouterHistory
+  /** List ↔ artist view transitions; off unless the browser supports them (`createBrowserViewTransition`). */
+  viewTransition?: ViewTransitionSetting
 }
 
-export function createAppRouter({ queryClient, auth, library, history }: AppRouterOptions) {
+export function createAppRouter({ queryClient, auth, library, history, viewTransition = false }: AppRouterOptions) {
   return createRouter({
     routeTree,
     history,
@@ -148,6 +151,7 @@ export function createAppRouter({ queryClient, auth, library, history }: AppRout
     stringifySearch,
     defaultErrorComponent: ErrorFallback,
     scrollRestoration: true,
+    defaultViewTransition: viewTransition,
   })
 }
 

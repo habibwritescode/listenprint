@@ -2,6 +2,7 @@ import { Link, getRouteApi, useLocation, useNavigate } from '@tanstack/react-rou
 import { useLibrary } from '../../hooks/useLibrary.ts'
 import { albumArtByArtist } from '../../library/artist-images.ts'
 import { artistTracks } from '../../library/rankings.ts'
+import { savedArtistGenres } from '../../spotify/artist-genres.ts'
 import { Notice } from '../Notice.tsx'
 import { primaryActionClass, softActionClass } from '../action-styles.ts'
 import { ArtistView } from '../artists/ArtistView.tsx'
@@ -15,6 +16,7 @@ export function LiveArtist() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const { session, library, details } = useLibrary()
+  const genres = savedArtistGenres(details.data)
 
   if (library.isPending) return null
 
@@ -71,6 +73,12 @@ export function LiveArtist() {
       sort={search.sort}
       basePath="/"
       photoUrl={details.data?.[artist.id]?.details?.imageUrl ?? albumArtByArtist(saved.tracks).get(artist.id)}
+      genres={genres.get(artist.id)}
+      noGenresNote={
+        genres.has(artist.id)
+          ? 'No genre tags — Spotify doesn’t provide any for this artist'
+          : 'Genres are looked up for your top 50 artists'
+      }
     />
   )
 }

@@ -169,7 +169,11 @@ const demoArtistRoute = createRoute({
   validateSearch: validateRankingSearch,
   search: { middlewares: [stripSearchParams({ mode: DEFAULT_RANKING_MODE, sort: DEFAULT_SORT_ORDER })] },
   loader: async ({ context, params }) => {
-    const library = await context.queryClient.ensureQueryData(demoLibraryQueryOptions)
+    // Genres too: a page that suspends after the router commits has nothing for the view transition to land on.
+    const [library] = await Promise.all([
+      context.queryClient.ensureQueryData(demoLibraryQueryOptions),
+      context.queryClient.ensureQueryData(demoGenresQueryOptions),
+    ])
     const artist = artistTracks(library.tracks, params.artistId, 'all')
       .at(0)
       ?.artists.find((credit) => credit.id === params.artistId)

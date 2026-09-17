@@ -196,6 +196,19 @@ describe('/demo ranking mode', () => {
 })
 
 describe('/demo/artist/$artistId', () => {
+  it('shows the artist’s genre tags and who shares their songs', async () => {
+    const artist = firstCatalogArtist()
+    const { generateDemoGenres } = await import('../demo/generate.ts')
+    const tags = generateDemoGenres().get(artist.id) ?? []
+
+    renderApp(`/demo/artist/${artist.id}`)
+
+    await screen.findByRole('heading', { level: 1, name: artist.name })
+    expect(tags.length).toBeGreaterThan(0)
+    for (const tag of tags.slice(0, 3)) expect(screen.getAllByText(tag).length).toBeGreaterThan(0)
+    expect(await screen.findByRole('heading', { level: 2, name: 'Co-occurring artists' })).toBeDefined()
+  })
+
   it('renders the page for an artist in the demo library', async () => {
     const artist = firstCatalogArtist()
 
@@ -293,6 +306,8 @@ describe('list to detail navigation', () => {
 
     await user.click(within(list).getAllByRole('link')[0])
     await screen.findByRole('link', { name: 'Back to ranking' })
+    // The artist page resets the scroll as it settles; this test is about what happens on the way back.
+    await new Promise((resolve) => setTimeout(resolve, 50))
     scrollTo.mockClear()
 
     await user.click(screen.getByRole('link', { name: 'Back to ranking' }))
@@ -300,11 +315,11 @@ describe('list to detail navigation', () => {
 
     await waitFor(() => expect(scrollTo).toHaveBeenCalled())
     await new Promise((resolve) => setTimeout(resolve, 50))
-    // Every scroll lands on the saved position: after a reload the router can restore before the list mounts, so a
-    // mount-time scroll to anywhere else would win.
-    expect(scrollTo.mock.calls.map(([options]) => (options as ScrollToOptions).top)).toEqual(
-      scrollTo.mock.calls.map(() => 3_080),
-    )
+    // The saved position is the one that stands: the list's own mount-time scroll never lands after the restore, so
+    // nothing pulls the page back to the top once it is back.
+    const tops = scrollTo.mock.calls.map(([options]) => (options as ScrollToOptions).top)
+    expect(tops.at(-1)).toBe(3_080)
+    expect(tops.lastIndexOf(0)).toBeLessThan(tops.indexOf(3_080))
     expect(window.scrollY).toBe(3_080)
     scrollWindowTo(0)
     vi.restoreAllMocks()

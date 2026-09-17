@@ -283,6 +283,29 @@ describe('home page, with a saved library', () => {
 })
 
 describe('live artist page', () => {
+  // Only the top 50 are looked up, so a missing artist is not the same as one Spotify has no tags for.
+  it('tells apart an artist with no tags from one that was never looked up', async () => {
+    const store = await storeWithLibrary()
+    await store.saveArtistDetails('saved-artist-0', {
+      details: { id: 'saved-artist-0', imageUrl: null, genres: ['dream pop'] },
+      fetchedAt: Date.UTC(2026, 8, 10),
+    })
+    await store.saveArtistDetails('saved-artist-1', {
+      details: { id: 'saved-artist-1', imageUrl: null, genres: [] },
+      fetchedAt: Date.UTC(2026, 8, 10),
+    })
+    const { unmount } = renderApp('/artist/saved-artist-0', { auth: signedIn(), store })
+    expect(await screen.findByText('dream pop')).toBeDefined()
+    unmount()
+
+    renderApp('/artist/saved-artist-1', { auth: signedIn(), store })
+    expect(await screen.findByText('No genre tags — Spotify doesn’t provide any for this artist')).toBeDefined()
+    cleanup()
+
+    renderApp('/artist/saved-artist-2', { auth: signedIn(), store })
+    expect(await screen.findByText('Genres are looked up for your top 50 artists')).toBeDefined()
+  })
+
   it('shows the artist from the saved library, with Spotify links, albums and a photo', async () => {
     const store = await storeWithLibrary()
     await store.saveArtistDetails('saved-artist-0', {

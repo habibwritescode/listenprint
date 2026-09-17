@@ -10,6 +10,7 @@ const SIZE_CLASSES = {
   row: 'size-11 rounded-md text-xl',
   header: 'size-24 rounded-lg text-[40px] tracking-[-0.03em]',
   identity: 'size-6 rounded-full text-xs',
+  art: 'size-10 rounded-sm text-base',
 } as const
 
 // Spelled out so Tailwind can find every class in the source.

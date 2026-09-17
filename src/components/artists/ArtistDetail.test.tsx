@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { act, cleanup, screen, within } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
-import type { ArtistRanking, ArtistRef } from '../../library/types.ts'
+import userEvent from '@testing-library/user-event'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { ArtistRanking, ArtistRef, Library, LibraryTrack } from '../../library/types.ts'
 import { makeArtist, makeTrack } from '../../test/factories.ts'
 import { renderWithRouter } from '../../test/render-with-router.ts'
 import { expectNoAxeViolations } from '../../test/axe.ts'
@@ -21,6 +22,7 @@ function scrollWindowTo(y: number) {
 afterEach(() => {
   cleanup()
   scrollWindowTo(0)
+  vi.unstubAllGlobals()
 })
 
 function rankingFor(artist: ArtistRef, rank: number, count: number): ArtistRanking {
@@ -124,32 +126,157 @@ describe('FeaturedOnlyNotice', () => {
   })
 })
 
-describe('ArtistTrackList', () => {
-  it('shows each track with its title, every credited artist, and the UTC liked date', async () => {
-    const lead = makeArtist({ name: 'Pale Oxbow' })
-    const feature = makeArtist({ name: 'Juniper Static' })
-    const track = makeTrack({ name: 'Low Orbit', artists: [lead, feature], addedAt: '2026-03-01T00:30:00.000Z' })
-    const likedDate = new Intl.DateTimeFormat(undefined, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      timeZone: 'UTC',
-    }).format(new Date(track.addedAt))
+const likedDateFormat = new Intl.DateTimeFormat(undefined, {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  timeZone: 'UTC',
+})
 
-    renderWithRouter(<ArtistTrackList tracks={[track]} artistName="Pale Oxbow" />)
+/** A controllable `matchMedia`, since jsdom has none: `setMatches` fires the change listeners like a resize would. */
+function stubMatchMedia(initial: boolean) {
+  let matches = initial
+  const listeners = new Set<() => void>()
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    media: query,
+    get matches() {
+      return matches
+    },
+    addEventListener: (_type: string, listener: () => void) => listeners.add(listener),
+    removeEventListener: (_type: string, listener: () => void) => listeners.delete(listener),
+  }))
+  return (next: boolean) => {
+    matches = next
+    for (const listener of listeners) listener()
+  }
+}
+
+function rowHeights() {
+  return screen.getAllByRole('listitem').map((item) => item.style.height)
+}
+
+describe('ArtistTrackList', () => {
+  const lead = makeArtist({ id: 'lead', name: 'Pale Oxbow' })
+  const feature = makeArtist({ id: 'feature', name: 'Juniper Static' })
+  const guest = makeArtist({ id: 'guest', name: 'Mira Duarte' })
+
+  function renderTracks(tracks: LibraryTrack[], source: Library['source'] = 'demo') {
+    return renderWithRouter(<ArtistTrackList tracks={tracks} artistId="lead" artistName="Pale Oxbow" source={source} />)
+  }
+
+  it('shows each track with its title, the other credited artists, and the UTC liked date', async () => {
+    const track = makeTrack({ name: 'Low Orbit', artists: [lead, feature, guest], addedAt: '2026-03-01T00:30:00.000Z' })
+
+    renderTracks([track])
 
     const list = await screen.findByRole('list', { name: 'Liked songs by Pale Oxbow' })
     const [row] = within(list).getAllByRole('listitem')
     expect(within(row).getByText('Low Orbit')).toBeDefined()
-    expect(within(row).getByText('Pale Oxbow • Juniper Static')).toBeDefined()
-    expect(row.querySelector('time')?.textContent).toBe(likedDate)
-    expect(row.querySelector('time')?.getAttribute('dateTime')).toBe(track.addedAt)
+    expect(within(row).getByText('with Juniper Static, Mira Duarte')).toBeDefined()
+    const dates = [...row.querySelectorAll('time')]
+    expect(dates.length).toBeGreaterThan(0)
+    for (const date of dates) {
+      expect(date.textContent).toBe(likedDateFormat.format(new Date(track.addedAt)))
+      expect(date.getAttribute('dateTime')).toBe(track.addedAt)
+    }
+  })
+
+  it('names the section, says dates are UTC, and has no Spotify links on sample data', async () => {
+    renderTracks([makeTrack({ artists: [lead] })])
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'Saved tracks' })).toBeDefined()
+    expect(screen.getByText('Dates shown in UTC')).toBeDefined()
+    expect(screen.getByText('Sample library — no album art')).toBeDefined()
+    expect(screen.queryAllByRole('link')).toHaveLength(0)
+  })
+
+  it('opens each Spotify track in a new tab from a named action, with none for local files', async () => {
+    const tracks = [
+      makeTrack({ id: '6rqhFgbbKwnb9MLmUQDhG6', name: 'Low Orbit', artists: [lead] }),
+      makeTrack({ id: 'local:::Garage:Demo:180', name: 'Garage Demo', artists: [lead] }),
+    ]
+    const { container } = renderTracks(tracks, 'spotify')
+
+    const link = await screen.findByRole('link', { name: 'Open Low Orbit in Spotify — opens in a new tab' })
+    expect(link.getAttribute('href')).toBe('https://open.spotify.com/track/6rqhFgbbKwnb9MLmUQDhG6')
+    expect(link.getAttribute('target')).toBe('_blank')
+    expect(link.getAttribute('rel')).toBe('noreferrer')
+    expect(screen.queryByRole('link', { name: /Garage Demo/ })).toBeNull()
+    expect(screen.getByText('Dates shown in UTC · ↗ opens the track in Spotify in a new tab')).toBeDefined()
+    await expectNoAxeViolations(container)
+  })
+
+  it('moves between track actions with the arrow keys, as one Tab stop', async () => {
+    const user = userEvent.setup()
+    const tracks = ['7aaaaaaaaaaaaaaaaaaaaa', '7bbbbbbbbbbbbbbbbbbbbb', '7ccccccccccccccccccccc'].map((id) =>
+      makeTrack({ id, artists: [lead] }),
+    )
+    renderWithRouter(
+      <>
+        <ArtistTrackList tracks={tracks} artistId="lead" artistName="Pale Oxbow" source="spotify" />
+        <button type="button">After the list</button>
+      </>,
+    )
+    await screen.findAllByRole('listitem')
+
+    await user.tab()
+    expect(document.activeElement?.closest('[aria-posinset]')?.getAttribute('aria-posinset')).toBe('1')
+    await user.keyboard('{ArrowDown}{ArrowDown}')
+    expect(document.activeElement?.closest('[aria-posinset]')?.getAttribute('aria-posinset')).toBe('3')
+    await user.tab()
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'After the list' }))
+  })
+
+  // Local files have no link, so the list's one Tab stop must land on a row that has one.
+  it('keeps the list reachable with Tab when the first rows are local files', async () => {
+    const user = userEvent.setup()
+    const tracks = [
+      makeTrack({ id: 'local:::Garage:Demo:180', artists: [lead] }),
+      makeTrack({ id: '7bbbbbbbbbbbbbbbbbbbbb', name: 'Second Song', artists: [lead] }),
+    ]
+    renderTracks(tracks, 'spotify')
+    await screen.findAllByRole('listitem')
+
+    await user.tab()
+
+    expect(document.activeElement).toBe(
+      screen.getByRole('link', { name: 'Open Second Song in Spotify — opens in a new tab' }),
+    )
+  })
+
+  it('paints album art over the letter tile when there is any', async () => {
+    const tracks = [
+      makeTrack({ artists: [lead], albumImageUrl: 'https://i.scdn.co/image/abc' }),
+      makeTrack({ artists: [lead] }),
+    ]
+    const { container } = renderTracks(tracks, 'spotify')
+
+    await screen.findAllByRole('listitem')
+    const images = container.querySelectorAll('img')
+    expect(images).toHaveLength(1)
+    expect(images[0].getAttribute('src')).toBe('https://i.scdn.co/image/abc')
+    expect(images[0].getAttribute('alt')).toBe('')
+  })
+
+  // The virtualizer's fixed row height has to follow the breakpoint, or rows overlap or leave gaps after a resize.
+  it('uses 64px rows at 741px and wider, 75px below, and re-measures when the width crosses', async () => {
+    const setWide = stubMatchMedia(true)
+    renderTracks(Array.from({ length: 5 }, () => makeTrack({ artists: [lead] })))
+
+    await screen.findAllByRole('listitem')
+    expect(new Set(rowHeights())).toEqual(new Set(['64px']))
+
+    await act(async () => {
+      setWide(false)
+    })
+
+    expect(new Set(rowHeights())).toEqual(new Set(['75px']))
   })
 
   it('renders only a window of rows, each with its position in the full list', async () => {
     const tracks = Array.from({ length: 2_000 }, () => makeTrack())
 
-    renderWithRouter(<ArtistTrackList tracks={tracks} artistName="Pale Oxbow" />)
+    renderTracks(tracks)
 
     const items = await screen.findAllByRole('listitem')
     expect(items.length).toBeGreaterThan(0)
@@ -160,7 +287,7 @@ describe('ArtistTrackList', () => {
 
   // Fails if the 'use no memo' directive is removed: compiled, the virtualizer's rows never update.
   it('renders later rows after the window scrolls', async () => {
-    renderWithRouter(<ArtistTrackList tracks={Array.from({ length: 2_000 }, () => makeTrack())} artistName="A" />)
+    renderTracks(Array.from({ length: 2_000 }, () => makeTrack()))
     await screen.findAllByRole('listitem')
     const before = positions()
 

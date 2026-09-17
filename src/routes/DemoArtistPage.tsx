@@ -41,7 +41,12 @@ export function DemoArtistPage() {
             asPrimary={primaryCount(artist.id, credited)}
             firstLiked={firstLiked(credited)}
           />
-          <ArtistTrackList tracks={ranking.tracks} artistName={artist.name} />
+          <ArtistTrackList
+            tracks={ranking.tracks}
+            artistId={artist.id}
+            artistName={artist.name}
+            source={library.source}
+          />
         </>
       ) : (
         <FeaturedOnlyNotice artist={artist} savedTracks={credited.length} sort={sort} />

@@ -5,6 +5,7 @@ import { http, HttpResponse } from 'msw'
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { SPOTIFY_API_URL } from '../auth/config.ts'
 import { createMemoryLibraryStore } from '../spotify/library-store.ts'
+import { spotifyLibrary, storeWithLibrary } from './library-session.ts'
 import { createTestSession, signedInStorage } from './auth-session.ts'
 import { expectNoAxeViolations } from './axe.ts'
 import { makeArtist, makeTrack } from './factories.ts'
@@ -148,5 +149,109 @@ describe('home page, scanning', () => {
 
     expect(await screen.findByText('An earlier scan stopped at 1 of 90 liked songs when its tab closed.')).toBeDefined()
     expect(screen.getByRole('button', { name: 'Resume' })).toBeDefined()
+  })
+})
+
+const scannedAt = new Intl.DateTimeFormat(undefined, {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+  timeZone: 'UTC',
+}).format(new Date('2026-09-10T08:00:00.000Z'))
+
+describe('home page, with a saved library', () => {
+  it('shows the live ranking with photos, without asking Spotify for anything', async () => {
+    const store = await storeWithLibrary()
+    await store.saveArtistDetails('saved-artist-0', {
+      details: { id: 'saved-artist-0', imageUrl: 'https://i.scdn.co/image/s0', genres: [] },
+      fetchedAt: Date.UTC(2026, 8, 10),
+    })
+    const requests = recordRequests()
+    const { container } = renderApp('/', { auth: signedIn(), store })
+
+    const list = await screen.findByRole('list', { name: 'Artists ranked by liked songs' })
+    expect(screen.getByText(`Scanned ${scannedAt} UTC`)).toBeDefined()
+    expect(screen.getByText('1 tie in your top 100')).toBeDefined()
+    expect(screen.getByRole('heading', { level: 2, name: '3 artists' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Refresh' })).toBeDefined()
+    const rows = within(list).getAllByRole('listitem')
+    const photographed = rows.find((row) => row.querySelector('img'))
+    expect(photographed?.querySelector('img')?.getAttribute('src')).toBe('https://i.scdn.co/image/s0')
+    expect(within(rows[0]).getByRole('link').getAttribute('href')).toMatch(/^\/artist\/saved-artist-/)
+    expect(screen.queryByText(/won’t be kept/)).toBeNull()
+    await expectNoAxeViolations(container)
+    expect(spotifyRequests(requests)).toHaveLength(0)
+  })
+
+  it('puts the mode pills in the header, and keeps mode and sort in the URL', async () => {
+    const user = userEvent.setup()
+    const { router } = renderApp('/?sort=alpha', { auth: signedIn(), store: await storeWithLibrary() })
+
+    const header = within(await screen.findByTestId('site-header'))
+    await user.click(await header.findByRole('radio', { name: 'Primary artist only' }))
+
+    await waitFor(() => expect(router.state.location.search).toEqual({ mode: 'primary', sort: 'alpha' }))
+    expect(router.state.location.pathname).toBe('/')
+    expect(screen.getByRole('heading', { level: 2, name: '3 artists, A to Z' })).toBeDefined()
+  })
+
+  it('keeps the previous ranking on screen while refreshing, then swaps in the new one', async () => {
+    const user = userEvent.setup()
+    const { handler, release } = pausingLibrary()
+    server.use(handler, artistResponds({}))
+    const { container } = renderApp('/', { auth: signedIn(), store: await storeWithLibrary() })
+    await user.click(await screen.findByRole('button', { name: 'Refresh' }))
+
+    await screen.findByText('Read 50 of 120 liked songs…')
+    await expectNoAxeViolations(container)
+    expect(screen.getByRole('list', { name: 'Artists ranked by liked songs' })).toBeDefined()
+    expect(screen.getByRole('heading', { level: 2, name: '3 artists · from your last scan' })).toBeDefined()
+    expect(screen.queryByRole('button', { name: 'Refresh' })).toBeNull()
+    expect(screen.getByTestId('site-header').querySelector('[data-stale]')).not.toBeNull()
+
+    release()
+
+    expect(await screen.findByRole('heading', { level: 2, name: '5 artists' })).toBeDefined()
+    expect(screen.queryByRole('progressbar')).toBeNull()
+    expect(screen.getByTestId('site-header').querySelector('[data-stale]')).toBeNull()
+  })
+
+  it('goes back to the previous ranking when a refresh is cancelled', async () => {
+    const user = userEvent.setup()
+    const { handler, release } = pausingLibrary()
+    server.use(handler, artistResponds({}))
+    renderApp('/', { auth: signedIn(), store: await storeWithLibrary() })
+    await user.click(await screen.findByRole('button', { name: 'Refresh' }))
+    await screen.findByText('Read 50 of 120 liked songs…')
+
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    release()
+
+    expect(await screen.findByRole('button', { name: 'Refresh' })).toBeDefined()
+    expect(screen.getByRole('heading', { level: 2, name: '3 artists' })).toBeDefined()
+    expect(screen.queryByRole('progressbar')).toBeNull()
+  })
+
+  it('explains an empty library and offers a refresh or the demo', async () => {
+    const empty = { ...spotifyLibrary(0), tracks: [] }
+    const { container } = renderApp('/', { auth: signedIn(), store: await storeWithLibrary(empty) })
+
+    expect(await screen.findByText('No liked songs to rank')).toBeDefined()
+    expect(screen.getByText(/Like a few songs, then refresh/)).toBeDefined()
+    expect(screen.getAllByRole('button', { name: 'Refresh' }).length).toBeGreaterThan(0)
+    expect(screen.getByRole('link', { name: 'See the demo' }).getAttribute('href')).toBe('/demo')
+    expect(screen.getByText('Saved tracks', { selector: 'dt' }).nextElementSibling?.textContent).toBe('0')
+    await expectNoAxeViolations(container)
+  })
+
+  it('says when this browser won’t keep the library', async () => {
+    const store = await storeWithLibrary(spotifyLibrary(), { persistent: false })
+
+    renderApp('/', { auth: signedIn(), store })
+
+    expect(await screen.findByText(/won’t be kept after this tab closes/)).toBeDefined()
   })
 })

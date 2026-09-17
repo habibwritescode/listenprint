@@ -49,8 +49,12 @@ export function spotifyLibrary(trackCount = 30): Library {
   }
 }
 
-export async function storeWithLibrary(library: Library = spotifyLibrary()) {
-  const store = createMemoryLibraryStore()
+/**
+ * A memory store holding `library`. `persistent` defaults to true, like IndexedDB in a normal browser window, so tests
+ * don't show the storage note unless they ask for it.
+ */
+export async function storeWithLibrary(library: Library = spotifyLibrary(), { persistent = true } = {}) {
+  const store = { ...createMemoryLibraryStore(), persistent }
   await store.saveLibrary(library)
   return store
 }

@@ -1,8 +1,10 @@
 import { useNavigate } from '@tanstack/react-router'
 import type { RankingMode } from '../../library/types.ts'
+import type { LibraryBase } from './library-paths.ts'
 
 interface RankingModeToggleProps {
   mode: RankingMode
+  basePath: LibraryBase
 }
 
 // The visible label is one word; the accessible name starts with it, so voice control still matches. One text node,
@@ -12,7 +14,7 @@ const OPTIONS = [
   { value: 'primary', label: 'Primary', rest: ' artist only' },
 ] as const satisfies ReadonlyArray<{ value: RankingMode; label: string; rest: string }>
 
-export function RankingModeToggle({ mode }: RankingModeToggleProps) {
+export function RankingModeToggle({ mode, basePath }: RankingModeToggleProps) {
   const navigate = useNavigate()
 
   return (
@@ -29,7 +31,7 @@ export function RankingModeToggle({ mode }: RankingModeToggleProps) {
             value={option.value}
             checked={mode === option.value}
             onChange={() =>
-              navigate({ to: '/demo', search: (prev) => ({ ...prev, mode: option.value }), replace: true })
+              navigate({ to: basePath, search: (prev) => ({ ...prev, mode: option.value }), replace: true })
             }
             className="sr-only"
           />

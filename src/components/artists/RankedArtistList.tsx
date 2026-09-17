@@ -1,5 +1,6 @@
 import { useWindowVirtualizer } from '@tanstack/react-virtual'
 import { useCallback, useState } from 'react'
+import type { ReactNode } from 'react'
 import { useRovingListFocus } from '../../hooks/useRovingListFocus.ts'
 import { shareOfLibrary, tiedRanks } from '../../library/presentation.ts'
 import type { SortOrder } from '../../library/presentation.ts'
@@ -24,6 +25,10 @@ interface RankedArtistListProps {
   basePath: LibraryBase
   /** Artist photos by artist id, for the artists that have one. */
   photos?: Readonly<Record<string, string>>
+  /** Beside the sort toggle, such as Refresh. */
+  panelAction?: ReactNode
+  /** Replaces the plain "No liked songs to rank" when there are no rankings. */
+  emptyState?: ReactNode
   /** The panel's heading, such as "1,412 artists in the sample library". */
   label: string
 }
@@ -32,7 +37,7 @@ interface RankedArtistListProps {
 // compiled list would never update on scroll. See src/test/virtualizer-jsdom.test.tsx.
 export function RankedArtistList(props: RankedArtistListProps) {
   'use no memo'
-  const { rankings, leaderCount, trackCount, mode, sort, basePath, photos, label } = props
+  const { rankings, leaderCount, trackCount, mode, sort, basePath, photos, panelAction, emptyState, label } = props
   const [scrollMargin, setScrollMargin] = useState(0)
   const virtualizer = useWindowVirtualizer({
     count: rankings.length,
@@ -62,9 +67,10 @@ export function RankedArtistList(props: RankedArtistListProps) {
         <h2 className="text-2xs tracking-[0.09em] text-subtle uppercase tabular-nums">{label}</h2>
         <span className="flex-1" />
         <SortToggle sort={sort} />
+        {panelAction}
       </div>
       {rankings.length === 0 ? (
-        <p className="px-6.5 py-16 text-center text-lg font-semibold">No liked songs to rank</p>
+        (emptyState ?? <p className="px-6.5 py-16 text-center text-lg font-semibold">No liked songs to rank</p>)
       ) : (
         <>
           <div

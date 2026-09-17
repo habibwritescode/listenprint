@@ -190,6 +190,27 @@ describe('home page, with a saved library', () => {
     expect(spotifyRequests(requests)).toHaveLength(0)
   })
 
+  // Only the top 50 artists get a photo lookup; everyone else shows album art from their liked tracks, like the old app.
+  it('shows album art for artists without a fetched photo', async () => {
+    const library = spotifyLibrary()
+    const tracks = library.tracks.map((track) =>
+      track.artists[0].id === 'saved-artist-1' ? { ...track, albumImageUrl: 'https://i.scdn.co/image/album-1' } : track,
+    )
+    const store = await storeWithLibrary({ ...library, tracks })
+    await store.saveArtistDetails('saved-artist-0', {
+      details: { id: 'saved-artist-0', imageUrl: 'https://i.scdn.co/image/photo-0', genres: [] },
+      fetchedAt: Date.UTC(2026, 8, 10),
+    })
+    renderApp('/', { auth: signedIn(), store })
+
+    const list = await screen.findByRole('list', { name: 'Artists ranked by liked songs' })
+    const imageFor = (name: string) =>
+      within(list).getByRole('link', { name }).closest('li')?.querySelector('img')?.getAttribute('src') ?? null
+    await waitFor(() => expect(imageFor('Saved Artist 0')).toBe('https://i.scdn.co/image/photo-0'))
+    expect(imageFor('Saved Artist 1')).toBe('https://i.scdn.co/image/album-1')
+    expect(imageFor('Saved Artist 2')).toBeNull()
+  })
+
   it('puts the mode pills in the header, and keeps mode and sort in the URL', async () => {
     const user = userEvent.setup()
     const { router } = renderApp('/?sort=alpha', { auth: signedIn(), store: await storeWithLibrary() })
@@ -284,6 +305,17 @@ describe('live artist page', () => {
     expect(back.getAttribute('href')).toBe('/?mode=primary&sort=alpha')
     await expectNoAxeViolations(container)
     expect(spotifyRequests(requests)).toHaveLength(0)
+  })
+
+  it('uses album art for the header when the artist has no fetched photo', async () => {
+    const library = spotifyLibrary()
+    const tracks = library.tracks.map((track) => ({ ...track, albumImageUrl: 'https://i.scdn.co/image/album' }))
+    renderApp('/artist/saved-artist-2', { auth: signedIn(), store: await storeWithLibrary({ ...library, tracks }) })
+
+    await screen.findByRole('heading', { level: 1, name: 'Saved Artist 2' })
+    await waitFor(() =>
+      expect(document.querySelector('main header img')?.getAttribute('src')).toBe('https://i.scdn.co/image/album'),
+    )
   })
 
   it('explains that artist pages need a signed-in library', async () => {

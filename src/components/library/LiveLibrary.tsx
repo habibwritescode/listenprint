@@ -1,5 +1,6 @@
 import { Link, getRouteApi } from '@tanstack/react-router'
 import { useLibrary } from '../../hooks/useLibrary.ts'
+import { artistImageUrls } from '../../library/artist-images.ts'
 import { rankArtists } from '../../library/rankings.ts'
 import type { SavedArtistDetails } from '../../spotify/library-store.ts'
 import { ghostActionClass, primaryActionClass, softActionClass } from '../action-styles.ts'
@@ -43,7 +44,7 @@ export function LiveLibrary() {
         basePath="/"
         title="Your artist ranking"
         notes={{ tracks: scannedNote(saved.fetchedAt), artists: tiesNote(rankArtists(saved.tracks, mode)) }}
-        photos={photoUrls(details.data)}
+        photos={artistImageUrls(saved.tracks, photoUrls(details.data))}
         stale={refreshing}
         lead={
           <>

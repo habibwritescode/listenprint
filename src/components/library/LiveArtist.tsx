@@ -1,5 +1,6 @@
 import { Link, getRouteApi, useLocation, useNavigate } from '@tanstack/react-router'
 import { useLibrary } from '../../hooks/useLibrary.ts'
+import { albumArtByArtist } from '../../library/artist-images.ts'
 import { artistTracks } from '../../library/rankings.ts'
 import { Notice } from '../Notice.tsx'
 import { primaryActionClass, softActionClass } from '../action-styles.ts'
@@ -69,7 +70,7 @@ export function LiveArtist() {
       mode={search.mode}
       sort={search.sort}
       basePath="/"
-      photoUrl={details.data?.[artist.id]?.details?.imageUrl}
+      photoUrl={details.data?.[artist.id]?.details?.imageUrl ?? albumArtByArtist(saved.tracks).get(artist.id)}
     />
   )
 }

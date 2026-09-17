@@ -7,6 +7,7 @@ import { rankArtists } from '../library/rankings.ts'
 import type { ArtistRanking, RankingMode } from '../library/types.ts'
 import type { AppRouter } from '../router.ts'
 import { expectNoAxeViolations } from './axe.ts'
+import { describedBy } from './descriptions.ts'
 import { renderApp, testLibrary } from './render-app.ts'
 
 // The demo pages are lazy route components. Loaded cold while another test file is transforming, the
@@ -51,10 +52,9 @@ function sampleKicker(ranking: ArtistRanking, mode: RankingMode) {
   return `Sample library · ${place} of ${countFormat.format(rankings.length)}`
 }
 
+/** The top row's link, named by the artist it shows. */
 function topRowName(mode: RankingMode) {
-  const [top] = rankArtists(testLibrary.tracks, mode)
-  const name = top.artist.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  return new RegExp(`^Rank 1, (tied, )?${name}, ${top.count} liked songs?, `)
+  return rankArtists(testLibrary.tracks, mode)[0].artist.name
 }
 
 describe('/demo search params', () => {
@@ -96,10 +96,8 @@ describe('live route search params', () => {
 })
 
 describe('/demo sort', () => {
-  function firstAlphaRowName() {
-    const [first] = sortRankings(rankArtists(testLibrary.tracks, 'all'), 'alpha')
-    const name = first.artist.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    return new RegExp(`^Rank ${first.rank}, ${name}, `)
+  function firstAlphaRow() {
+    return sortRankings(rankArtists(testLibrary.tracks, 'all'), 'alpha')[0]
   }
 
   it('orders rows by name for ?sort=alpha, keeping count ranks', async () => {
@@ -107,7 +105,9 @@ describe('/demo sort', () => {
 
     const list = await screen.findByRole('list', { name: 'Artists ranked by liked songs' })
     const rows = within(list).getAllByRole('listitem')
-    expect(within(rows[0]).getByRole('link').getAttribute('aria-label')).toMatch(firstAlphaRowName())
+    const firstLink = within(rows[0]).getByRole('link')
+    expect(firstLink.textContent).toBe(firstAlphaRow().artist.name)
+    expect(describedBy(firstLink)).toMatch(new RegExp(`^Rank ${firstAlphaRow().rank}, `))
     expect(demoSearch(router)).toEqual({ mode: 'all', sort: 'alpha' })
     expect(router.state.location.searchStr).toBe('?sort=alpha')
     const artistCount = countFormat.format(rankArtists(testLibrary.tracks, 'all').length)

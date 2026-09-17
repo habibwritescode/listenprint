@@ -14,8 +14,11 @@ export function formatShare(share: number): string {
   return shareFormat.format(share)
 }
 
-/** The row's accessible name, as one string: separate screen-reader-only spans lose the spaces at their edges. */
-export function artistRowLabel({ artist, rank, count }: ArtistRanking, share: number, tied: boolean): string {
+/**
+ * What the row's link description says beyond the artist name, as one string: separate screen-reader-only spans lose
+ * the spaces at their edges. The name itself stays the link's only text, so it matches what voice-control users say.
+ */
+export function artistRowDetails({ rank, count }: ArtistRanking, share: number, tied: boolean): string {
   const songs = `${count} liked ${count === 1 ? 'song' : 'songs'}`
-  return `Rank ${rank}, ${tied ? 'tied, ' : ''}${artist.name}, ${songs}, ${formatShare(share)} of library`
+  return `Rank ${rank}, ${tied ? 'tied, ' : ''}${songs}, ${formatShare(share)} of library`
 }

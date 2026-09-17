@@ -3,7 +3,12 @@ import axe from 'axe-core'
 export async function expectNoAxeViolations(container: Element): Promise<void> {
   const { violations } = await axe.run(container, {
     // jsdom has no layout or canvas, so contrast can only be checked in a real browser.
-    rules: { 'color-contrast': { enabled: false } },
+    rules: {
+      'color-contrast': { enabled: false },
+      // Experimental in axe, but Lighthouse runs it: visible text must be part of the accessible name (WCAG 2.5.3). jsdom
+      // has no layout, so axe sees no visible text here; tests that matter check names directly.
+      'label-content-name-mismatch': { enabled: true },
+    },
   })
   if (violations.length === 0) return
 

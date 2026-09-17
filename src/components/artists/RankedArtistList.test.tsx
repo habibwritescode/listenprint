@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { barWidthPercent, sortRankings } from '../../library/presentation.ts'
 import { rankArtists } from '../../library/rankings.ts'
 import { expectNoAxeViolations } from '../../test/axe.ts'
+import { describedBy } from '../../test/descriptions.ts'
 import { makeArtist, makeTrack } from '../../test/factories.ts'
 import { renderWithRouter } from '../../test/render-with-router.ts'
 import { RankedArtistList } from './RankedArtistList.tsx'
@@ -120,10 +121,36 @@ describe('RankedArtistList', () => {
       />,
     )
 
-    const leader = await screen.findByRole('link', { name: 'Rank 1, Artist A, 2 liked songs, 66.7% of library' })
-    const second = screen.getByRole('link', { name: /^Rank 2, tied, Artist B, 1 liked song, 33\.3% of library$/ })
+    const leader = await screen.findByRole('link', { name: 'Artist A' })
+    const second = screen.getByRole('link', { name: 'Artist B' })
+    expect(describedBy(leader)).toBe('Rank 1, 2 liked songs, 66.7% of library')
+    expect(describedBy(second)).toBe('Rank 2, tied, 1 liked song, 33.3% of library')
     expect(leader.getAttribute('href')).toBe('/demo/artist/artist-a?mode=primary&sort=count')
     expect(second.getAttribute('href')).toBe('/demo/artist/artist-b?mode=primary&sort=count')
+  })
+
+  // Voice-control users activate a link by saying its visible text, so the accessible name must be that text (WCAG
+  // 2.5.3). Lighthouse flagged the old whole-row label, "Rank 1, Khalid, …", which didn't match what the row shows.
+  it('names each row link by the visible artist name alone, with rank and counts as its description', async () => {
+    const artist = makeArtist({ id: 'artist-a', name: 'Khalid' })
+    const rankings = rankArtists([makeTrack({ artists: [artist] })], 'all')
+
+    renderWithRouter(
+      <RankedArtistList
+        rankings={rankings}
+        leaderCount={1}
+        trackCount={1}
+        mode="all"
+        sort="count"
+        basePath="/demo"
+        label="1 artist"
+      />,
+    )
+
+    const link = await screen.findByRole('link', { name: 'Khalid' })
+    expect(link.textContent).toBe('Khalid')
+    expect(link.hasAttribute('aria-label')).toBe(false)
+    expect(describedBy(link)).toBe('Rank 1, 1 liked song, 100.0% of library')
   })
 
   it('shows the count, the share as text, and a tie marker only on tied ranks', async () => {
@@ -169,8 +196,8 @@ describe('RankedArtistList', () => {
 
     const rows = await screen.findAllByRole('listitem')
     const zed = within(rows[2]).getByRole('link')
-    expect(zed.getAttribute('aria-label')).toBe('Rank 1, Zed, 2 liked songs, 50.0% of library')
-    expect(within(rows[0]).getByRole('link').getAttribute('aria-label')).toMatch(/^Rank 2, Artist /)
+    expect(describedBy(zed)).toBe('Rank 1, 2 liked songs, 50.0% of library')
+    expect(describedBy(within(rows[0]).getByRole('link'))).toMatch(/^Rank 2, /)
     expect(screen.queryByText('=')).toBeNull()
     expect(container.querySelector('[data-slot="column-header"]')?.firstElementChild?.textContent).toBe('Rank')
     expect(screen.getByRole<HTMLInputElement>('radio', { name: 'A to Z' }).checked).toBe(true)
@@ -224,8 +251,9 @@ describe('RankedArtistList', () => {
       />,
     )
 
-    const link = await screen.findByRole('link', { name: /^Rank 1, Artist A,/ })
-    expect(link.querySelector<HTMLElement>('[data-slot="bar"]')?.style.width).toBe(`${barWidthPercent(1, 4)}%`)
+    const link = await screen.findByRole('link', { name: 'Artist A' })
+    const row = link.closest('li')
+    expect(row?.querySelector<HTMLElement>('[data-slot="bar"]')?.style.width).toBe(`${barWidthPercent(1, 4)}%`)
   })
 
   it('shows an empty state when there are no rankings', async () => {

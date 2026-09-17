@@ -7,6 +7,8 @@ interface StatsSummaryProps {
   trackCount: number
   /** What the saved-tracks and artists figures mean for this library, such as that it's the sample. */
   notes: { tracks: string; artists: string }
+  /** While a first scan runs: every figure is a dash, since nothing has been counted yet. */
+  pending?: boolean
 }
 
 const countFormat = new Intl.NumberFormat()
@@ -24,8 +26,8 @@ function concentrationNote(tiers: Concentration | null, trackCount: number): str
   return `Top 10 artists · ${tracks}`
 }
 
-export function StatsSummary({ rankings, trackCount, notes }: StatsSummaryProps) {
-  const tiers = concentration(rankings, trackCount)
+export function StatsSummary({ rankings, trackCount, notes, pending = false }: StatsSummaryProps) {
+  const tiers = pending ? null : concentration(rankings, trackCount)
   const percents = tiers ? roundedPercents([tiers.top10Tracks, tiers.next90Tracks, tiers.restTracks]) : null
 
   return (
@@ -44,16 +46,16 @@ export function StatsSummary({ rankings, trackCount, notes }: StatsSummaryProps)
               '—'
             )}
           </dd>
-          <dd className={noteClass}>{concentrationNote(tiers, trackCount)}</dd>
+          <dd className={noteClass}>{pending ? 'Top 10 artists' : concentrationNote(tiers, trackCount)}</dd>
         </div>
         <div className="bg-surface px-4.5 pt-4 pb-4.5">
           <dt className={labelClass}>Saved tracks</dt>
-          <dd className={figureClass}>{countFormat.format(trackCount)}</dd>
+          <dd className={figureClass}>{pending ? '—' : countFormat.format(trackCount)}</dd>
           <dd className={noteClass}>{notes.tracks}</dd>
         </div>
         <div className="bg-surface px-4.5 pt-4 pb-4.5">
           <dt className={labelClass}>Artists</dt>
-          <dd className={figureClass}>{countFormat.format(rankings.length)}</dd>
+          <dd className={figureClass}>{pending ? '—' : countFormat.format(rankings.length)}</dd>
           <dd className={noteClass}>{notes.artists}</dd>
         </div>
       </dl>

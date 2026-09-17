@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 // @vitest-environment-options {"url": "http://127.0.0.1:5173/"}
-import { cleanup, screen, within } from '@testing-library/react'
+import { cleanup, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { SPOTIFY_TOKEN_URL } from '../auth/config.ts'
 import type { AuthSession } from '../auth/session.ts'
 import { primaryActionClass } from '../components/action-styles.ts'
@@ -15,6 +15,11 @@ import { renderApp } from './render-app.ts'
 import { profileForbidden, spotifyNetworkError, tokenRejects } from './spotify-handlers.ts'
 
 setupSpotifyMocks()
+
+// The signed-in home is a lazy component; loaded before any test so a cold import can't miss findBy's timeout.
+beforeAll(async () => {
+  await import('../components/library/SignedInHome.tsx')
+})
 
 afterEach(cleanup)
 
@@ -38,7 +43,8 @@ describe('home page, signed out', () => {
 
     await user.click(screen.getByRole('button', { name: 'Connect Spotify' }))
 
-    expect(redirect).toHaveBeenCalledTimes(1)
+    // The redirect follows an async code-challenge hash, which can lag under a busy test run.
+    await waitFor(() => expect(redirect).toHaveBeenCalledTimes(1))
     const url = new URL(redirect.mock.calls[0][0])
     expect(`${url.origin}${url.pathname}`).toBe('https://accounts.spotify.com/authorize')
     expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Opening Spotify…' }).disabled).toBe(true)
@@ -132,7 +138,8 @@ describe('home page notices', () => {
 
     await user.click(screen.getByRole('button', { name: action }))
 
-    expect(redirect).toHaveBeenCalledTimes(1)
+    // The redirect follows an async code-challenge hash, which can lag under a busy test run.
+    await waitFor(() => expect(redirect).toHaveBeenCalledTimes(1))
     // Only the pressed button changes: swapping screens mid-redirect would read as a glitch.
     expect(screen.getByRole('heading', { level: 1, name: title })).toBeDefined()
     expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Opening Spotify…' }).disabled).toBe(true)
@@ -149,7 +156,8 @@ describe('home page notices', () => {
     await expectNoAxeViolations(container)
 
     await user.click(screen.getByRole('button', { name: 'Try again' }))
-    expect(redirect).toHaveBeenCalledTimes(1)
+    // The redirect follows an async code-challenge hash, which can lag under a busy test run.
+    await waitFor(() => expect(redirect).toHaveBeenCalledTimes(1))
   })
 })
 

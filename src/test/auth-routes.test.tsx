@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { SPOTIFY_TOKEN_URL } from '../auth/config.ts'
 import { writePendingSignIn } from '../auth/token-storage.ts'
 import { NOW, createTestSession, returnFromSpotify, signedInStorage } from './auth-session.ts'
@@ -10,6 +10,11 @@ import { recordRequests, server, setupSpotifyMocks } from './msw-server.ts'
 import { renderApp } from './render-app.ts'
 
 setupSpotifyMocks()
+
+// The signed-in home is a lazy component; loaded before any test so a cold import can't miss findBy's timeout.
+beforeAll(async () => {
+  await import('../components/library/SignedInHome.tsx')
+})
 
 afterEach(cleanup)
 

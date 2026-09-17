@@ -8,3 +8,11 @@ export const demoLibraryQueryOptions = queryOptions({
   staleTime: Infinity,
   gcTime: Infinity,
 })
+
+export const demoGenresQueryOptions = queryOptions({
+  queryKey: ['genres', 'demo'],
+  queryFn: async () => (await import('./generate.ts')).generateDemoGenres(),
+  staleTime: Infinity,
+  gcTime: Infinity,
+})
+

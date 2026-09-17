@@ -1,6 +1,13 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { Library } from '../library/types.ts'
-import { DEMO_FETCHED_AT, DEMO_SEED, DEMO_TRACK_COUNT, buildRoster, generateDemoLibrary } from './generate.ts'
+import {
+  DEMO_FETCHED_AT,
+  DEMO_SEED,
+  DEMO_TRACK_COUNT,
+  buildRoster,
+  generateDemoGenres,
+  generateDemoLibrary,
+} from './generate.ts'
 import type { Roster, RosterArtist } from './generate.ts'
 import { createRandom } from './random.ts'
 import { GENRE_CLUSTERS } from './vocabulary.ts'
@@ -253,5 +260,30 @@ describe('generateDemoLibrary', () => {
 
       expect(artists.some((a) => a.id.startsWith('local:') && catalogNames.has(a.name))).toBe(true)
     })
+  })
+})
+
+describe('generateDemoGenres', () => {
+  it('tags the artists of the generated library, with the same ids', () => {
+    const library = generateDemoLibrary({ trackCount: 400 })
+    const genres = generateDemoGenres()
+    const artistIds = new Set(library.tracks.flatMap((track) => track.artists.map((artist) => artist.id)))
+
+    expect([...artistIds].every((id) => genres.has(id))).toBe(true)
+    expect([...genres.values()].some((tags) => tags.length > 0)).toBe(true)
+  })
+
+  // The generator leaves some artists unclassified, and local files have no tags at all: both are looked up and empty,
+  // never missing, so the artist page states the fact instead of pointing at the top-50 lookup.
+  it('gives unclassified and local artists an empty tag list', () => {
+    const genres = generateDemoGenres()
+
+    expect(genres.get('local:Unknown Artist')).toEqual([])
+    expect([...genres.values()].some((tags) => tags.length === 0)).toBe(true)
+  })
+
+  it('is the same for the same seed and different for another', () => {
+    expect([...generateDemoGenres()]).toEqual([...generateDemoGenres()])
+    expect([...generateDemoGenres({ seed: 1 })]).not.toEqual([...generateDemoGenres()])
   })
 })

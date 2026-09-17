@@ -1,4 +1,4 @@
-import type { ArtistRanking, LibraryTrack, RankingMode } from './types.ts'
+import type { ArtistRanking, ArtistRef, LibraryTrack, RankingMode } from './types.ts'
 
 export const RANKING_MODES = ['all', 'primary'] as const
 
@@ -20,7 +20,8 @@ function compareRankings(a: Omit<ArtistRanking, 'rank'>, b: Omit<ArtistRanking, 
   return a.artist.id < b.artist.id ? -1 : 1
 }
 
-function countedArtists(track: LibraryTrack, mode: RankingMode) {
+/** The credits a mode counts: every artist, or only the primary one. */
+export function countedArtists(track: LibraryTrack, mode: RankingMode): readonly ArtistRef[] {
   return mode === 'all' ? track.artists : track.artists.slice(0, 1)
 }
 

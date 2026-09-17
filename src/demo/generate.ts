@@ -1,3 +1,4 @@
+import type { ArtistGenres } from '../library/genres.ts'
 import type { ArtistRef, Library, LibraryTrack } from '../library/types.ts'
 import { createRandom, cumulative, zipfWeights } from './random.ts'
 import type { Random } from './random.ts'
@@ -313,3 +314,19 @@ export function generateDemoLibrary({
 
   return { source: 'demo', fetchedAt: DEMO_FETCHED_AT, tracks: chronological.reverse() }
 }
+
+/**
+ * The genre tags of every artist in the sample library, from the same seed as the library, so the ids match. The demo
+ * stands in for a full set of lookups: artists the generator left unclassified, and its local files, carry no tags,
+ * which is "looked up, none returned" rather than never looked up.
+ */
+export function generateDemoGenres({ seed = DEMO_SEED }: Pick<DemoLibraryOptions, 'seed'> = {}): ArtistGenres {
+  const roster = buildRoster(createRandom(seed))
+  const genres = new Map<string, readonly string[]>(
+    [...roster.core, ...roster.tail].map((artist) => [artist.id, artist.genres]),
+  )
+  // Local files: the two stock names, and the first one, which borrows the top artist's name.
+  for (const name of [...LOCAL_ARTIST_NAMES, roster.core[0].name]) genres.set(`local:${name}`, [])
+  return genres
+}
+

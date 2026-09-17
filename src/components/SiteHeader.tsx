@@ -8,7 +8,7 @@ import { useHeaderScrollState } from '../hooks/useScrollVisibility.ts'
  */
 export function SiteHeader({ children }: { children: ReactNode }) {
   const headerRef = useRef<HTMLElement>(null)
-  const { hidden, scrolled } = useHeaderScrollState(headerRef)
+  const { hidden, scrolled, instant } = useHeaderScrollState(headerRef)
 
   return (
     <header
@@ -16,7 +16,8 @@ export function SiteHeader({ children }: { children: ReactNode }) {
       data-testid="site-header"
       data-hidden={hidden ? '' : undefined}
       data-scrolled={scrolled ? '' : undefined}
-      className="sticky top-0 z-20 -mx-4 flex min-h-14 flex-wrap items-center gap-x-3 gap-y-2 border-b border-transparent px-4 py-2.5 transition-[translate,background-color,border-color] duration-200 ease-settled data-scrolled:border-border data-scrolled:bg-surface motion-safe:data-hidden:not-focus-within:-translate-y-full sm:-mx-8 sm:px-8"
+      data-instant={instant ? '' : undefined}
+      className="sticky top-0 z-20 -mx-4 flex min-h-14 flex-wrap items-center gap-x-3 gap-y-2 border-b border-transparent px-4 py-2.5 transition-[translate,background-color,border-color] duration-200 ease-settled data-scrolled:border-border data-scrolled:bg-surface data-instant:transition-none motion-safe:data-hidden:not-focus-within:-translate-y-full sm:-mx-8 sm:px-8"
     >
       {children}
     </header>

@@ -9,6 +9,25 @@ export function nextHeaderHidden(hidden: boolean, previousY: number, currentY: n
   return hidden
 }
 
+/** How long after a new page renders a scroll still counts as the router resetting or restoring its position. */
+export const ARRIVAL_SETTLE_MS = 300
+
+/**
+ * Whether a scroll belongs to arriving on a page: the router's reset or restore, or a virtualized list starting at the
+ * restored offset. `renderedAt` is null until the new page has rendered.
+ */
+export function isArrivalScroll(pageChanged: boolean, renderedAt: number | null, now: number): boolean {
+  return pageChanged && (renderedAt === null || now - renderedAt <= ARRIVAL_SETTLE_MS)
+}
+
+/**
+ * The header after the first scroll that follows a page change. That scroll is the router resetting or restoring the
+ * position, often thousands of pixels in one jump, not someone scrolling, so it only shows the header at the top.
+ */
+export function headerHiddenAfterNavigation(hidden: boolean, currentY: number, headerHeight: number): boolean {
+  return currentY <= headerHeight ? false : hidden
+}
+
 export function headerHasBackground(scrollY: number): boolean {
   return scrollY > 0
 }

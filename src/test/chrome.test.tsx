@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
-import { cleanup, screen, waitFor, within } from '@testing-library/react'
-import { afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { act, cleanup, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { ARRIVAL_SETTLE_MS } from '../hooks/scroll-visibility.ts'
 import { rankArtists } from '../library/rankings.ts'
 import { expectNoAxeViolations } from './axe.ts'
 import { renderApp, testLibrary } from './render-app.ts'
@@ -61,5 +63,62 @@ describe('back bar on artist pages', () => {
     await waitFor(() => expect(within(siteHeader()).getByRole('link', { name: 'Back to ranking' })).toBeDefined())
     expect(within(siteHeader()).getByRole('link', { name: 'Back to ranking' }).getAttribute('href')).toBe('/')
     expect(within(siteHeader()).queryByText('Sample data')).toBeNull()
+  })
+})
+
+describe('site header across page changes', () => {
+  // As in a browser: fired at the document and bubbling to the window, so the router's listener and the header's
+  // both hear it.
+  function scrollWindowTo(y: number) {
+    Object.defineProperty(window, 'scrollY', { value: y, configurable: true })
+    document.dispatchEvent(new Event('scroll', { bubbles: true }))
+  }
+
+  /** The router and the virtualizer scroll the window; here that moves `scrollY` and fires a scroll event. */
+  function followWindowScrollTo() {
+    vi.spyOn(window, 'scrollTo').mockImplementation(((xOrOptions?: number | ScrollToOptions, y?: number) => {
+      const top = typeof xOrOptions === 'object' ? xOrOptions.top : y
+      if (top !== undefined) scrollWindowTo(top)
+    }) as typeof window.scrollTo)
+  }
+
+  async function scrollDownTheList() {
+    for (let y = 150; y <= 3_000; y += 150) {
+      await act(async () => scrollWindowTo(y))
+    }
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    scrollWindowTo(0)
+  })
+
+  // Going back restores the list thousands of pixels down in one jump. Read as scrolling down, it slid the header out
+  // straight after arriving, which looked like a flicker.
+  it('stays in view when Back restores a list that was scrolled down', async () => {
+    const user = userEvent.setup()
+    followWindowScrollTo()
+    renderApp('/demo')
+    const list = await screen.findByRole('list', { name: 'Artists ranked by liked songs' })
+    await scrollDownTheList()
+    await waitFor(() => expect(siteHeader().hasAttribute('data-hidden')).toBe(true))
+
+    await user.click(within(list).getAllByRole('link')[0])
+    await screen.findByRole('heading', { level: 1 })
+    await waitFor(() => expect(siteHeader().hasAttribute('data-hidden')).toBe(false))
+    await user.click(within(siteHeader()).getByRole('link', { name: 'Back to ranking' }))
+    await screen.findByRole('list', { name: 'Artists ranked by liked songs' })
+    await waitFor(() => expect(window.scrollY).toBe(3_000))
+
+    expect(siteHeader().hasAttribute('data-hidden')).toBe(false)
+    expect(siteHeader().hasAttribute('data-scrolled')).toBe(true)
+    // Its background appears at once rather than fading in over the rows it covers.
+    expect(siteHeader().hasAttribute('data-instant')).toBe(true)
+
+    const settled = performance.now() + ARRIVAL_SETTLE_MS + 1
+    vi.spyOn(performance, 'now').mockReturnValue(settled)
+    await act(async () => scrollWindowTo(3_150))
+    expect(siteHeader().hasAttribute('data-hidden')).toBe(true)
+    expect(siteHeader().hasAttribute('data-instant')).toBe(false)
   })
 })

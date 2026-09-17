@@ -157,4 +157,8 @@ declare module '@tanstack/react-router' {
   interface Register {
     router: AppRouter
   }
+  interface HistoryState {
+    /** Set by ranking rows, so an artist page knows the list is the history entry behind it. */
+    fromRanking?: boolean
+  }
 }

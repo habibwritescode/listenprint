@@ -1,18 +1,9 @@
 import { Link, useMatch } from '@tanstack/react-router'
 import { useLibraryChrome } from '../hooks/useLibraryChrome.ts'
+import { BackToRanking } from './BackToRanking.tsx'
 import { SampleDataChip } from './SampleDataChip.tsx'
 import { RankingModeToggle } from './artists/RankingModeToggle.tsx'
 import { HeaderIdentity } from './auth/HeaderIdentity.tsx'
-
-const backLinkClass = 'rounded-md px-1 text-md text-muted transition-colors hover:text-text'
-
-function BackLabel() {
-  return (
-    <>
-      <span aria-hidden>← </span>Back to ranking
-    </>
-  )
-}
 
 /**
  * What the header holds on each route. Artist pages swap the wordmark for a back link, the one strip that's always
@@ -28,20 +19,14 @@ export function HeaderContent() {
   if (demoArtist) {
     return (
       <>
-        <Link to="/demo" search={demoArtist.search} className={backLinkClass}>
-          <BackLabel />
-        </Link>
+        <BackToRanking basePath="/demo" search={demoArtist.search} />
         <span className="flex-1" />
         <SampleDataChip />
       </>
     )
   }
   if (liveArtist) {
-    return (
-      <Link to="/" search={liveArtist.search} className={backLinkClass}>
-        <BackLabel />
-      </Link>
-    )
+    return <BackToRanking basePath="/" search={liveArtist.search} />
   }
 
   return (

@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import type { SortOrder } from '../../library/presentation.ts'
 import type { ArtistRef } from '../../library/types.ts'
+import { BackToRanking } from '../BackToRanking.tsx'
 import { ghostActionClass, primaryActionClass } from '../action-styles.ts'
 import { artistPath } from './library-paths.ts'
 import type { LibraryBase } from './library-paths.ts'
@@ -43,9 +44,9 @@ export function FeaturedOnlyNotice({ artist, savedTracks, sort, basePath }: Feat
         >
           Switch to all artists
         </Link>
-        <Link to={basePath} search={{ mode: 'primary', sort }} className={ghostActionClass}>
+        <BackToRanking basePath={basePath} search={{ mode: 'primary', sort }} className={ghostActionClass}>
           Back to ranking
-        </Link>
+        </BackToRanking>
       </div>
       <p className="mt-3.5 text-sm text-subtle">Switching keeps you on this artist.</p>
     </section>

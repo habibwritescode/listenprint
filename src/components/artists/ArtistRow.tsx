@@ -40,6 +40,8 @@ export function ArtistRow(props: ArtistRowProps) {
       to={artistPath(basePath)}
       params={{ artistId: artist.id }}
       search={{ mode, sort }}
+      // Lets the artist page's back link return through history, which restores the list's scroll position.
+      state={(previous) => ({ ...previous, fromRanking: true })}
       tabIndex={tabIndex}
       aria-label={artistRowLabel(ranking, share, tied)}
       className={`grid h-full items-center gap-3.5 px-4 transition-colors hover:bg-raised-surface ${ARTIST_ROW_GRID}`}

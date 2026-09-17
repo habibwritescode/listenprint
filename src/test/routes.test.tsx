@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { concentration, ordinal, roundedPercents, sortRankings } from '../library/presentation.ts'
 import { rankArtists } from '../library/rankings.ts'
 import type { ArtistRanking, RankingMode } from '../library/types.ts'
@@ -252,6 +252,48 @@ describe('/demo/artist/$artistId', () => {
 })
 
 describe('list to detail navigation', () => {
+  function scrollWindowTo(y: number) {
+    Object.defineProperty(window, 'scrollY', { value: y, configurable: true })
+    document.dispatchEvent(new Event('scroll'))
+  }
+
+  // A new history entry would land at the top of a list that can be thousands of rows long.
+  it('goes back through history from "Back to ranking", restoring the list scroll position', async () => {
+    const user = userEvent.setup()
+    const scrollTo = vi.spyOn(window, 'scrollTo')
+    const { router } = renderApp('/demo?mode=primary')
+    const list = await screen.findByRole('list', { name: 'Artists ranked by liked songs' })
+    scrollWindowTo(3_080)
+
+    await user.click(within(list).getAllByRole('link')[0])
+    await screen.findByRole('link', { name: 'Back to ranking' })
+    expect(router.history.canGoBack()).toBe(true)
+    scrollWindowTo(0)
+    scrollTo.mockClear()
+
+    await user.click(screen.getByRole('link', { name: 'Back to ranking' }))
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/demo'))
+    expect(router.state.location.searchStr).toBe('?mode=primary')
+    expect(router.history.canGoBack()).toBe(false)
+    await waitFor(() => expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 3_080 })))
+    scrollWindowTo(0)
+    vi.restoreAllMocks()
+  })
+
+  // Opened from a shared link there is no list behind the page to go back to.
+  it('opens the ranking as a new page when the artist page was not reached from it', async () => {
+    const user = userEvent.setup()
+    const [top] = rankArtists(testLibrary.tracks, 'all')
+    const { router } = renderApp(`/demo/artist/${top.artist.id}?sort=alpha`)
+
+    await user.click(await screen.findByRole('link', { name: 'Back to ranking' }))
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/demo'))
+    expect(router.state.location.searchStr).toBe('?sort=alpha')
+    expect(router.history.canGoBack()).toBe(true)
+  })
+
   it('keeps primary mode from the list to the artist page and back', async () => {
     const user = userEvent.setup()
     const [top] = rankArtists(testLibrary.tracks, 'primary')

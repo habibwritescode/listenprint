@@ -1,7 +1,8 @@
-import { useWindowVirtualizer } from '@tanstack/react-virtual'
+import { defaultRangeExtractor, useWindowVirtualizer } from '@tanstack/react-virtual'
 import { useCallback, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useRestoredWindowOffset } from '../../hooks/useRestoredWindowOffset.ts'
+import { tabbableRowIndex, withKeptRows } from '../../hooks/roving-focus.ts'
 import { useRovingListFocus } from '../../hooks/useRovingListFocus.ts'
 import { shareOfLibrary, tiedRanks } from '../../library/presentation.ts'
 import type { SortOrder } from '../../library/presentation.ts'
@@ -41,19 +42,21 @@ export function RankedArtistList(props: RankedArtistListProps) {
   const { rankings, leaderCount, trackCount, mode, sort, basePath, photos, panelAction, emptyState, label } = props
   const [scrollMargin, setScrollMargin] = useState(0)
   const initialOffset = useRestoredWindowOffset()
+  const { attachList, activeIndex, keptIndexes, onKeyDown, onFocus, onBlur } = useRovingListFocus({
+    count: rankings.length,
+    // Called from key handlers, after the virtualizer below exists.
+    scrollToIndex: (index) => virtualizer.scrollToIndex(index, { align: 'auto' }),
+  })
   const virtualizer = useWindowVirtualizer({
     count: rankings.length,
     estimateSize: () => ROW_HEIGHT,
     overscan: 10,
     scrollMargin,
     initialOffset,
+    rangeExtractor: (range) => withKeptRows(defaultRangeExtractor(range), keptIndexes, rankings.length),
   })
   const items = virtualizer.getVirtualItems()
-  const { attachList, tabbableIndex, onKeyDown, onFocus } = useRovingListFocus({
-    count: rankings.length,
-    renderedIndexes: items.map((item) => item.index),
-    scrollToIndex: (index) => virtualizer.scrollToIndex(index, { align: 'auto' }),
-  })
+  const tabbableIndex = tabbableRowIndex(activeIndex, items.map((item) => item.index))
   // Stable, so the list's page offset is measured once on mount rather than on every render mid-scroll.
   const measureList = useCallback(
     (node: HTMLOListElement | null) => {
@@ -94,6 +97,7 @@ export function RankedArtistList(props: RankedArtistListProps) {
             style={{ height: virtualizer.getTotalSize() }}
             onKeyDown={onKeyDown}
             onFocus={onFocus}
+            onBlur={onBlur}
           >
             {items.map((item) => {
               const ranking = rankings[item.index]

@@ -4,20 +4,20 @@ import { rovingTargetIndex } from './roving-focus.ts'
 
 interface RovingListFocusOptions {
   count: number
-  /** Indexes of the rows currently in the DOM; a virtualized list renders only some of them. */
-  renderedIndexes: readonly number[]
   scrollToIndex: (index: number) => void
 }
 
-function rowIndexOf(target: EventTarget): number | null {
-  const row = (target as HTMLElement).closest('[aria-posinset]')
+function rowIndexOf(target: EventTarget | null): number | null {
+  const row = target instanceof Element ? target.closest('[aria-posinset]') : null
   return row ? Number(row.getAttribute('aria-posinset')) - 1 : null
 }
 
-export function useRovingListFocus({ count, renderedIndexes, scrollToIndex }: RovingListFocusOptions) {
+export function useRovingListFocus({ count, scrollToIndex }: RovingListFocusOptions) {
   const listRef = useRef<HTMLOListElement | null>(null)
   const pendingFocusIndex = useRef<number | null>(null)
   const [activeIndex, setActiveIndex] = useState(0)
+  // The row holding focus, while focus is inside the list.
+  const [focusedIndex, setFocusedIndex] = useState<number | null>(null)
 
   const focusRow = (index: number): boolean => {
     const link = listRef.current?.querySelector<HTMLElement>(`[aria-posinset="${index + 1}"] a`)
@@ -54,11 +54,20 @@ export function useRovingListFocus({ count, renderedIndexes, scrollToIndex }: Ro
 
   const onFocus = (event: FocusEvent<HTMLOListElement>) => {
     const index = rowIndexOf(event.target)
-    if (index !== null) setActiveIndex(index)
+    if (index === null) return
+    setActiveIndex(index)
+    setFocusedIndex(index)
   }
 
-  // If the active row has scrolled out of the DOM, the first rendered row keeps the list reachable with Tab.
-  const tabbableIndex = renderedIndexes.includes(activeIndex) ? activeIndex : (renderedIndexes[0] ?? -1)
+  const onBlur = (event: FocusEvent<HTMLOListElement>) => {
+    if (!listRef.current?.contains(event.relatedTarget as Node | null)) setFocusedIndex(null)
+  }
 
-  return { attachList, tabbableIndex, onKeyDown, onFocus }
+  /**
+   * Rows the virtualizer must keep rendered: the focused row and the row keyboard focus is heading to. Only while focus
+   * is in the list, so a list scrolled away with the mouse still offers an on-screen row to Tab into.
+   */
+  const keptIndexes = focusedIndex === null ? [] : [focusedIndex, activeIndex]
+
+  return { attachList, activeIndex, keptIndexes, onKeyDown, onFocus, onBlur }
 }

@@ -1,7 +1,8 @@
-import { useWindowVirtualizer } from '@tanstack/react-virtual'
+import { defaultRangeExtractor, useWindowVirtualizer } from '@tanstack/react-virtual'
 import { useCallback, useEffect, useState } from 'react'
 import { useMediaQuery } from '../../hooks/useMediaQuery.ts'
 import { useRestoredWindowOffset } from '../../hooks/useRestoredWindowOffset.ts'
+import { tabbableRowIndex, withKeptRows } from '../../hooks/roving-focus.ts'
 import { useRovingListFocus } from '../../hooks/useRovingListFocus.ts'
 import { spotifyTrackUrl } from '../../library/presentation.ts'
 import type { Library, LibraryTrack } from '../../library/types.ts'
@@ -54,23 +55,25 @@ export function ArtistTrackList({ tracks, artistId, artistName, source }: Artist
   const rowHeight = useMediaQuery('(min-width: 741px)') ? WIDE_ROW_HEIGHT : NARROW_ROW_HEIGHT
   const [scrollMargin, setScrollMargin] = useState(0)
   const initialOffset = useRestoredWindowOffset()
+  const { attachList, activeIndex, keptIndexes, onKeyDown, onFocus, onBlur } = useRovingListFocus({
+    count: tracks.length,
+    // Called from key handlers, after the virtualizer below exists.
+    scrollToIndex: (index) => virtualizer.scrollToIndex(index, { align: 'auto' }),
+  })
   const virtualizer = useWindowVirtualizer({
     count: tracks.length,
     estimateSize: () => rowHeight,
     overscan: 10,
     scrollMargin,
     initialOffset,
+    rangeExtractor: (range) => withKeptRows(defaultRangeExtractor(range), keptIndexes, tracks.length),
   })
   // Sizes are cached per row, so crossing the breakpoint has to discard them.
   useEffect(() => {
     virtualizer.measure()
   }, [virtualizer, rowHeight])
   const items = virtualizer.getVirtualItems()
-  const { attachList, tabbableIndex, onKeyDown, onFocus } = useRovingListFocus({
-    count: tracks.length,
-    renderedIndexes: items.map((item) => item.index),
-    scrollToIndex: (index) => virtualizer.scrollToIndex(index, { align: 'auto' }),
-  })
+  const tabbableIndex = tabbableRowIndex(activeIndex, items.map((item) => item.index))
   const measureList = useCallback(
     (node: HTMLOListElement | null) => {
       attachList(node)
@@ -120,6 +123,7 @@ export function ArtistTrackList({ tracks, artistId, artistName, source }: Artist
           style={{ height: virtualizer.getTotalSize() }}
           onKeyDown={onKeyDown}
           onFocus={onFocus}
+          onBlur={onBlur}
         >
           {items.map((item) => {
             const track = tracks[item.index]

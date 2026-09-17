@@ -276,6 +276,43 @@ describe('RankedArtistList keyboard navigation', () => {
     await waitFor(() => expect(focusedPosition()).toBe('1'))
   })
 
+  // Browsers only draw the keyboard focus ring when focus moves from an element that had one. If the focused row
+  // unmounts before the target renders, focus falls to <body> and the target gets no ring.
+  it('moves focus straight from row to row on End, never dropping it to the page', async () => {
+    const user = userEvent.setup()
+    giveDocumentListHeight()
+    followWindowScrollTo()
+    renderWithRouter(<ManyArtists />)
+    await screen.findAllByRole('listitem')
+    await tabIntoList(user)
+    const firstRow = document.activeElement
+    const previouslyFocused: Array<EventTarget | null> = []
+    const record = (event: FocusEvent) => previouslyFocused.push(event.relatedTarget)
+    document.addEventListener('focusin', record)
+
+    await user.keyboard('{End}')
+    await waitFor(() => expect(focusedPosition()).toBe(String(ROW_COUNT)))
+    document.removeEventListener('focusin', record)
+
+    expect(previouslyFocused).toEqual([firstRow])
+  })
+
+  // Scrolling the focused row away must not throw focus back to the page.
+  it('keeps the focused row in the page while the list scrolls away from it', async () => {
+    const user = userEvent.setup()
+    renderWithRouter(<ManyArtists />)
+    await screen.findAllByRole('listitem')
+    await tabIntoList(user)
+    const focused = document.activeElement
+
+    await act(async () => {
+      scrollWindowTo(ROW_HEIGHT * 1_000)
+    })
+
+    expect(focused?.isConnected).toBe(true)
+    expect(document.activeElement).toBe(focused)
+  })
+
   it('lets Tab leave the list after one row instead of stepping through every row', async () => {
     const user = userEvent.setup()
     renderWithRouter(

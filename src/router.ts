@@ -18,7 +18,6 @@ import { DEFAULT_SORT_ORDER, isSortOrder } from './library/presentation.ts'
 import type { SortOrder } from './library/presentation.ts'
 import { DEFAULT_RANKING_MODE, artistTracks, isRankingMode } from './library/rankings.ts'
 import type { RankingMode } from './library/types.ts'
-import { ArtistPage } from './routes/ArtistPage.tsx'
 import { CallbackPending } from './routes/CallbackPending.tsx'
 import { DemoPagePending } from './routes/DemoPagePending.tsx'
 import { NotFoundPage } from './routes/NotFoundPage.tsx'
@@ -83,7 +82,10 @@ const artistRoute = createRoute({
   path: '/artist/$artistId',
   validateSearch: validateRankingSearch,
   search: { middlewares: [stripSearchParams({ mode: DEFAULT_RANKING_MODE, sort: DEFAULT_SORT_ORDER })] },
-  component: ArtistPage,
+  // Lazy through the router rather than React.lazy inside the page: the router loads the chunk before it commits, so
+  // the header is rendered when the list-to-artist view transition captures the new page. A React.lazy boundary would
+  // still suspend for a tick on first open, and the travelling tile would have nowhere to land.
+  component: lazyRouteComponent(() => import('./routes/ArtistPage.tsx'), 'ArtistPage'),
 })
 
 // Demo views are lazy route components so the virtualizer and their UI stay out of the main bundle.

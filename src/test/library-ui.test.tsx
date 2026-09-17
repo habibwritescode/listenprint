@@ -21,6 +21,7 @@ beforeAll(async () => {
     import('../components/library/SignedInHome.tsx'),
     import('../components/library/LiveLibrary.tsx'),
     import('../components/library/LiveArtist.tsx'),
+    import('../routes/ArtistPage.tsx'),
   ])
 })
 

@@ -1,13 +1,8 @@
 import { Link } from '@tanstack/react-router'
-import { Suspense, lazy } from 'react'
 import { Notice } from '../components/Notice.tsx'
 import { ghostActionClass, primaryActionClass } from '../components/action-styles.ts'
+import { LiveArtist } from '../components/library/LiveArtist.tsx'
 import { useAuth } from '../hooks/useAuth.ts'
-
-// The artist view pulls in the virtualizer and the library queries, which only a signed-in user needs.
-const LiveArtist = lazy(() =>
-  import('../components/library/LiveArtist.tsx').then((module) => ({ default: module.LiveArtist })),
-)
 
 export function ArtistPage() {
   const { state } = useAuth()
@@ -30,9 +25,5 @@ export function ArtistPage() {
     )
   }
 
-  return (
-    <Suspense fallback={null}>
-      <LiveArtist />
-    </Suspense>
-  )
+  return <LiveArtist />
 }

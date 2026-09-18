@@ -201,7 +201,12 @@ html:active-view-transition-type(artist-open, artist-close) [data-artist-tile] {
  * header, so without this the tiles of rows scrolled under the header paint over it for the whole transition. Chrome
  * stacks layers in document order, where the header comes first, so the z-index is needed too (checked in Chrome 152).
  */
-html:active-view-transition-type(artist-open, artist-close) [data-site-header] {
+/*
+ * Only while it's on screen. A hidden header is translated above the viewport, and a named snapshot animates from the
+ * rect it was captured at to the rect it lands in, so naming it made a header the reader had scrolled away slide back
+ * down over the incoming page. Unnamed, it stays in the page snapshot it belongs to and never reappears.
+ */
+html:active-view-transition-type(artist-open, artist-close) [data-site-header]:not([data-hidden]) {
   view-transition-name: site-header;
 }
 

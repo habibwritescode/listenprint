@@ -24,7 +24,7 @@ export function RankingModeToggle({ mode, basePath }: RankingModeToggleProps) {
       {OPTIONS.map((option) => (
         <label
           key={option.value}
-          className="flex h-6.5 cursor-pointer items-center rounded-sm px-2.5 text-sm text-muted transition-colors hover:text-text has-checked:bg-accent has-checked:font-semibold has-checked:text-on-accent has-focus-visible:shadow-[inset_0_0_0_2px_var(--color-bright-accent)]"
+          className="flex h-6.5 cursor-pointer items-center rounded-sm px-2.5 text-sm text-muted transition-colors hover:text-text has-checked:bg-accent has-checked:font-semibold has-checked:text-on-accent has-focus-visible:shadow-[inset_0_0_0_2px_var(--color-accent),0_0_0_1px_var(--color-bright-accent)]"
         >
           <input
             type="radio"

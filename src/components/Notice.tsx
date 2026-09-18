@@ -71,6 +71,7 @@ export function Notice({
         {spinner && (
           <span
             data-slot="spinner"
+            data-motion="spinner"
             aria-hidden
             className={`mb-5.5 block size-5.5 animate-[spin_0.75s_linear_infinite] rounded-full border-2 border-accent border-t-transparent ${align === 'center' ? 'mx-auto' : ''}`}
           />

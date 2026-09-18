@@ -81,7 +81,6 @@
   --ease-settled: cubic-bezier(0.2, 0.7, 0.3, 1);
   --duration-morph: 240ms;
   --duration-fade: 120ms;
-
   --animate-shimmer: shimmer 1.25s linear infinite;
 
   @keyframes shimmer {
@@ -130,14 +129,34 @@
     border-radius: var(--radius-md);
   }
 
-  /* Every animation either disappears or becomes instant; nothing is merely slowed. */
+  /*
+   * Movement goes; a looping state indicator does not. A scan of ten thousand tracks shows nothing but a spinner for
+   * minutes, and a still one reads as frozen. Elements carrying data-motion opt out of the blanket and state their
+   * own reduced-motion behaviour below.
+   */
   @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
+    *:not([data-motion]),
+    *:not([data-motion])::before,
+    *:not([data-motion])::after {
       animation: none !important;
       transition: none !important;
       scroll-behavior: auto !important;
+    }
+
+    /* The sweeping gradient travels across the element; a pulse in place carries the same meaning. */
+    [data-motion='skeleton'] {
+      animation: reduced-pulse 1.6s ease-in-out infinite !important;
+      background: var(--color-raised-surface) !important;
+    }
+  }
+
+  @keyframes reduced-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.55;
     }
   }
 }

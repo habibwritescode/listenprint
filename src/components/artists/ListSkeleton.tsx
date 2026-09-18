@@ -43,7 +43,7 @@ export function ListSkeleton({ label, header, still = false }: ListSkeletonProps
           className={`grid h-19.25 items-center gap-3.5 border-b border-border px-4 last:border-b-0 ${ARTIST_ROW_GRID}`}
         >
           <span className="h-2.5 w-3.75 rounded-[3px] bg-raised-surface" />
-          <span className={`size-11 rounded-md ${shimmer}`} />
+          <span data-motion="skeleton" className={`size-11 rounded-md ${shimmer}`} />
           <span>
             <span className="block h-2.75 rounded-[3px] bg-raised-surface" style={{ width: `${name}%` }} />
             <span className="mt-2.25 block h-2.25 rounded-[3px] bg-raised-surface" style={{ width: `${sample}%` }} />

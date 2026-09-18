@@ -17,6 +17,7 @@ export function ScanProgress({ read, total, estimateMs }: ScanProgressProps) {
       <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm text-muted tabular-nums">
         <span
           aria-hidden
+          data-motion="spinner"
           className="size-2.25 animate-[spin_0.75s_linear_infinite] rounded-full border-2 border-accent border-t-transparent"
         />
         <span>{scanProgressText(read, total)}</span>

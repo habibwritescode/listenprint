@@ -49,6 +49,7 @@ export function ArtistAvatar({ name, size = 'row', imageUrl = null, transitionNa
       {photoState === 'loading' && (
         <span
           data-slot="shimmer"
+          data-motion="skeleton"
           className="absolute inset-0 animate-shimmer bg-[linear-gradient(90deg,var(--color-raised-surface)_0%,var(--color-border)_42%,var(--color-raised-surface)_82%)] bg-size-[380px_100%]"
         />
       )}

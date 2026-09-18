@@ -50,17 +50,26 @@ export function ExportActions(props: ExportActionsProps) {
   const { createImage = renderSquare } = props
   const [error, setError] = useState<string | null>(null)
   const [working, setWorking] = useState(false)
+  // Without this the button returns to its idle label and nothing says the file was made.
+  const [saved, setSaved] = useState<'png' | 'csv' | null>(null)
 
   if (rankings.length === 0) return null
 
   const artists = `${countFormat.format(rankings.length)} artist${rankings.length === 1 ? '' : 's'}`
   const scope = filtered ? `the ${artists} shown` : `all ${artists}`
 
+  const confirmSaved = (kind: 'png' | 'csv') => {
+    setSaved(kind)
+    window.setTimeout(() => setSaved(null), 2000)
+  }
+
   const downloadCsv = () => {
     setError(null)
+    setSaved(null)
     try {
       const csv = toCsv(rankings, trackCount)
       download(exportFileName('csv', source, now), new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+      confirmSaved('csv')
     } catch {
       setError('The spreadsheet couldn’t be created. Try again.')
     }
@@ -71,6 +80,7 @@ export function ExportActions(props: ExportActionsProps) {
 
   const downloadPng = async () => {
     setError(null)
+    setSaved(null)
     setWorking(true)
     try {
       const blob = await createImage({
@@ -81,6 +91,7 @@ export function ExportActions(props: ExportActionsProps) {
         sample: source === 'demo',
       })
       download(exportFileName('png', source, now), blob)
+      confirmSaved('png')
     } catch {
       setError('The image couldn’t be created. Try again.')
     } finally {
@@ -93,11 +104,20 @@ export function ExportActions(props: ExportActionsProps) {
       <h2 id="export-title" className="sr-only">
         Take it with you
       </h2>
-      <button type="button" onClick={() => void downloadPng()} disabled={working} className={softActionClass}>
-        {working ? 'Preparing image…' : 'Download PNG'}
+      <button
+        type="button"
+        onClick={() => void downloadPng()}
+        disabled={working}
+        className={`${softActionClass} min-w-54`}
+      >
+        <span key={working ? 'working' : saved === 'png' ? 'saved' : 'idle'} className="animate-label-swap">
+          {working ? 'Preparing image…' : saved === 'png' ? 'Saved to your downloads' : 'Download PNG'}
+        </span>
       </button>
-      <button type="button" onClick={downloadCsv} className={ghostActionClass}>
-        Download CSV
+      <button type="button" onClick={downloadCsv} className={`${ghostActionClass} min-w-[11rem]`}>
+        <span key={saved === 'csv' ? 'saved' : 'idle'} className="animate-label-swap">
+          {saved === 'csv' ? 'Saved to your downloads' : 'Download CSV'}
+        </span>
       </button>
       <p className="text-sm text-muted">{`Your top 20 as an image · ${scope} as a spreadsheet`}</p>
       {error && <p className="basis-full text-sm text-highlight">{error}</p>}

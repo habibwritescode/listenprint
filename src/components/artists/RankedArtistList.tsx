@@ -33,6 +33,10 @@ interface RankedArtistListProps {
   emptyState?: ReactNode
   /** The panel's heading, such as "1,412 artists in the sample library". */
   label: string
+  /** Highlighted inside each row's name. */
+  query?: string
+  /** A line under the list, such as the note that a filtered view has its own link. */
+  note?: ReactNode
 }
 
 // React Compiler caches getVirtualItems() against the virtualizer instance, which never changes, so a
@@ -40,6 +44,7 @@ interface RankedArtistListProps {
 export function RankedArtistList(props: RankedArtistListProps) {
   'use no memo'
   const { rankings, leaderCount, trackCount, mode, sort, basePath, photos, panelAction, emptyState, label } = props
+  const { query, note } = props
   const [scrollMargin, setScrollMargin] = useState(0)
   const initialOffset = useRestoredWindowOffset()
   const { attachList, activeIndex, keptIndexes, onKeyDown, onFocus, onBlur } = useRovingListFocus({
@@ -121,11 +126,13 @@ export function RankedArtistList(props: RankedArtistListProps) {
                     basePath={basePath}
                     photoUrl={photos?.[ranking.artist.id]}
                     tabIndex={item.index === tabbableIndex ? 0 : -1}
+                    query={query}
                   />
                 </li>
               )
             })}
           </ol>
+          {note && <p className="border-t border-border px-4 py-3 text-sm text-subtle">{note}</p>}
         </>
       )}
     </div>

@@ -53,6 +53,8 @@ function validateCallbackSearch(search: Record<string, unknown>): CallbackSearch
 interface RankingSearch {
   mode: RankingMode
   sort: SortOrder
+  /** The artist filter, kept on artist pages too so going back returns to the same filtered list. */
+  q: string
 }
 
 interface TimelineSearch extends RankingSearch {
@@ -60,12 +62,13 @@ interface TimelineSearch extends RankingSearch {
 }
 
 // Artist pages carry the list's sort too, only so their back link can restore it.
-type RankingSearchInput = { mode?: RankingMode; sort?: SortOrder } & SearchSchemaInput
+type RankingSearchInput = { mode?: RankingMode; sort?: SortOrder; q?: string } & SearchSchemaInput
 
 function validateRankingSearch(search: RankingSearchInput): RankingSearch {
   return {
     mode: isRankingMode(search.mode) ? search.mode : DEFAULT_RANKING_MODE,
     sort: isSortOrder(search.sort) ? search.sort : DEFAULT_SORT_ORDER,
+    q: searchText(search.q) ?? '',
   }
 }
 
@@ -87,7 +90,7 @@ const rankingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
   validateSearch: validateRankingSearch,
-  search: { middlewares: [stripSearchParams({ mode: DEFAULT_RANKING_MODE, sort: DEFAULT_SORT_ORDER })] },
+  search: { middlewares: [stripSearchParams({ mode: DEFAULT_RANKING_MODE, sort: DEFAULT_SORT_ORDER, q: '' })] },
   component: RankingsPage,
 })
 
@@ -95,7 +98,7 @@ const artistRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/artist/$artistId',
   validateSearch: validateRankingSearch,
-  search: { middlewares: [stripSearchParams({ mode: DEFAULT_RANKING_MODE, sort: DEFAULT_SORT_ORDER })] },
+  search: { middlewares: [stripSearchParams({ mode: DEFAULT_RANKING_MODE, sort: DEFAULT_SORT_ORDER, q: '' })] },
   // Lazy through the router rather than React.lazy inside the page: the router loads the chunk before it commits, so
   // the header is rendered when the list-to-artist view transition captures the new page. A React.lazy boundary would
   // still suspend for a tick on first open, and the travelling tile would have nowhere to land.
@@ -108,7 +111,7 @@ const demoRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/demo',
   validateSearch: validateRankingSearch,
-  search: { middlewares: [stripSearchParams({ mode: DEFAULT_RANKING_MODE, sort: DEFAULT_SORT_ORDER })] },
+  search: { middlewares: [stripSearchParams({ mode: DEFAULT_RANKING_MODE, sort: DEFAULT_SORT_ORDER, q: '' })] },
   loader: ({ context }) => context.queryClient.ensureQueryData(demoLibraryQueryOptions),
   component: lazyRouteComponent(() => import('./routes/DemoPage.tsx'), 'DemoPage'),
   pendingComponent: DemoPagePending,
@@ -118,7 +121,7 @@ const genresRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/genres',
   validateSearch: validateRankingSearch,
-  search: { middlewares: [stripSearchParams({ mode: DEFAULT_RANKING_MODE, sort: DEFAULT_SORT_ORDER })] },
+  search: { middlewares: [stripSearchParams({ mode: DEFAULT_RANKING_MODE, sort: DEFAULT_SORT_ORDER, q: '' })] },
   component: lazyRouteComponent(() => import('./routes/GenresPage.tsx'), 'GenresPage'),
 })
 
@@ -128,7 +131,7 @@ const timelineRoute = createRoute({
   validateSearch: validateTimelineSearch,
   search: {
     middlewares: [
-      stripSearchParams({ mode: DEFAULT_RANKING_MODE, sort: DEFAULT_SORT_ORDER, grain: DEFAULT_TIMELINE_GRAIN }),
+      stripSearchParams({ mode: DEFAULT_RANKING_MODE, sort: DEFAULT_SORT_ORDER, q: '', grain: DEFAULT_TIMELINE_GRAIN }),
     ],
   },
   component: lazyRouteComponent(() => import('./routes/TimelinePage.tsx'), 'TimelinePage'),
@@ -138,7 +141,7 @@ const demoGenresRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/demo/genres',
   validateSearch: validateRankingSearch,
-  search: { middlewares: [stripSearchParams({ mode: DEFAULT_RANKING_MODE, sort: DEFAULT_SORT_ORDER })] },
+  search: { middlewares: [stripSearchParams({ mode: DEFAULT_RANKING_MODE, sort: DEFAULT_SORT_ORDER, q: '' })] },
   loader: async ({ context }) => {
     await Promise.all([
       context.queryClient.ensureQueryData(demoLibraryQueryOptions),
@@ -155,7 +158,7 @@ const demoTimelineRoute = createRoute({
   validateSearch: validateTimelineSearch,
   search: {
     middlewares: [
-      stripSearchParams({ mode: DEFAULT_RANKING_MODE, sort: DEFAULT_SORT_ORDER, grain: DEFAULT_TIMELINE_GRAIN }),
+      stripSearchParams({ mode: DEFAULT_RANKING_MODE, sort: DEFAULT_SORT_ORDER, q: '', grain: DEFAULT_TIMELINE_GRAIN }),
     ],
   },
   loader: ({ context }) => context.queryClient.ensureQueryData(demoLibraryQueryOptions),
@@ -167,7 +170,7 @@ const demoArtistRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/demo/artist/$artistId',
   validateSearch: validateRankingSearch,
-  search: { middlewares: [stripSearchParams({ mode: DEFAULT_RANKING_MODE, sort: DEFAULT_SORT_ORDER })] },
+  search: { middlewares: [stripSearchParams({ mode: DEFAULT_RANKING_MODE, sort: DEFAULT_SORT_ORDER, q: '' })] },
   loader: async ({ context, params }) => {
     // Genres too: a page that suspends after the router commits has nothing for the view transition to land on.
     const [library] = await Promise.all([

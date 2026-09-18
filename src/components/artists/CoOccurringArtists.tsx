@@ -59,7 +59,7 @@ export function CoOccurringArtists({ tracks, artistId, artistName, mode, sort, b
                 <Link
                   to={artistPath(basePath)}
                   params={{ artistId: entry.artist.id }}
-                  search={{ mode, sort }}
+                  search={(previous) => ({ ...previous, mode, sort })}
                   aria-describedby={`co-occurring-${entry.artist.id}`}
                   className="truncate text-base text-text"
                 >

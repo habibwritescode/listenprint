@@ -63,7 +63,7 @@ describe('/demo search params', () => {
 
     await screen.findByRole('heading', { level: 1, name: 'Sample library ranking' })
 
-    expect(demoSearch(router)).toEqual({ mode: 'primary', sort: 'count' })
+    expect(demoSearch(router)).toEqual({ mode: 'primary', sort: 'count', q: '' })
     expect(router.state.location.searchStr).toBe('?mode=primary')
   })
 
@@ -74,7 +74,7 @@ describe('/demo search params', () => {
 
       await screen.findByRole('heading', { level: 1, name: 'Sample library ranking' })
 
-      expect(demoSearch(router)).toEqual({ mode: 'all', sort: 'count' })
+      expect(demoSearch(router)).toEqual({ mode: 'all', sort: 'count', q: '' })
       expect(router.state.location.searchStr).toBe('')
     },
   )
@@ -82,9 +82,9 @@ describe('/demo search params', () => {
 
 describe('live route search params', () => {
   it.each([
-    ['/?mode=primary&sort=alpha', '/', { mode: 'primary', sort: 'alpha' }, '?mode=primary&sort=alpha'],
-    ['/?mode=bogus&sort=count', '/', { mode: 'all', sort: 'count' }, ''],
-    ['/artist/abc123?mode=primary', '/artist/$artistId', { mode: 'primary', sort: 'count' }, '?mode=primary'],
+    ['/?mode=primary&sort=alpha', '/', { mode: 'primary', sort: 'alpha', q: '' }, '?mode=primary&sort=alpha'],
+    ['/?mode=bogus&sort=count', '/', { mode: 'all', sort: 'count', q: '' }, ''],
+    ['/artist/abc123?mode=primary', '/artist/$artistId', { mode: 'primary', sort: 'count', q: '' }, '?mode=primary'],
   ] as const)('resolves %s like the demo routes', async (url, routeId, search, searchStr) => {
     const { router } = renderApp(url)
 
@@ -108,7 +108,7 @@ describe('/demo sort', () => {
     const firstLink = within(rows[0]).getByRole('link')
     expect(firstLink.textContent).toBe(firstAlphaRow().artist.name)
     expect(describedBy(firstLink)).toMatch(new RegExp(`^Rank ${firstAlphaRow().rank}, `))
-    expect(demoSearch(router)).toEqual({ mode: 'all', sort: 'alpha' })
+    expect(demoSearch(router)).toEqual({ mode: 'all', sort: 'alpha', q: '' })
     expect(router.state.location.searchStr).toBe('?sort=alpha')
     const artistCount = countFormat.format(rankArtists(testLibrary.tracks, 'all').length)
     expect(screen.getByRole('heading', { level: 2, name: `${artistCount} artists, A to Z` })).toBeDefined()
@@ -119,7 +119,7 @@ describe('/demo sort', () => {
 
     await screen.findByRole('link', { name: topRowName('all') })
 
-    expect(demoSearch(router)).toEqual({ mode: 'all', sort: 'count' })
+    expect(demoSearch(router)).toEqual({ mode: 'all', sort: 'count', q: '' })
     expect(router.state.location.searchStr).toBe('')
   })
 

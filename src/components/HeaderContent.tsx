@@ -1,6 +1,8 @@
-import { Link, useMatch } from '@tanstack/react-router'
+import { Link, useMatch, useNavigate } from '@tanstack/react-router'
 import { useLibraryChrome } from '../hooks/useLibraryChrome.ts'
+import { useSearchQuery } from '../hooks/search-query.ts'
 import { AnalyticsNav } from './AnalyticsNav.tsx'
+import { SearchField } from './SearchField.tsx'
 import { BackToRanking } from './BackToRanking.tsx'
 import { SampleDataChip } from './SampleDataChip.tsx'
 import { GrainToggle } from './analytics/GrainToggle.tsx'
@@ -15,6 +17,8 @@ export function HeaderContent() {
   const home = useMatch({ from: '/', shouldThrow: false })
   const demoList = useMatch({ from: '/demo', shouldThrow: false })
   const { hasLibrary, refreshing } = useLibraryChrome()
+  const { setQuery } = useSearchQuery()
+  const navigate = useNavigate()
   const demoArtist = useMatch({ from: '/demo/artist/$artistId', shouldThrow: false })
   const liveArtist = useMatch({ from: '/artist/$artistId', shouldThrow: false })
   const genres = useMatch({ from: '/genres', shouldThrow: false })
@@ -25,6 +29,8 @@ export function HeaderContent() {
   const timelineMatch = timeline ?? demoTimeline
   // The nav needs a library to lead to: signed out, or before a scan, the home page is the only useful view.
   const nav = demo ?? genres ?? timeline ?? (hasLibrary ? home : null)
+  // Only the ranked list can be filtered, so only it carries the field.
+  const ranking = demoList ?? (hasLibrary ? home : null)
 
   if (demoArtist) {
     return (
@@ -47,6 +53,17 @@ export function HeaderContent() {
       </Link>
       {demo && <SampleDataChip />}
       <span className="flex-1" />
+      {ranking && (
+        <SearchField
+          query={ranking.search.q}
+          matchCount={null}
+          onQueryChange={setQuery}
+          onCommit={(next) =>
+            void navigate({ to: demoList ? '/demo' : '/', search: (prev) => ({ ...prev, q: next }), replace: true })
+          }
+          onEnterList={() => document.querySelector<HTMLElement>('ol[aria-label] a')?.focus()}
+        />
+      )}
       {timelineMatch && (
         <GrainToggle
           grain={timelineMatch.search.grain}

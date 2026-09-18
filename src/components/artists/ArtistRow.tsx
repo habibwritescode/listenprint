@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { useId } from 'react'
 import { barWidthPercent } from '../../library/presentation.ts'
+import { highlightParts } from '../../library/search.ts'
 import { artistTileName } from '../../navigation/view-transitions.ts'
 import type { SortOrder } from '../../library/presentation.ts'
 import type { ArtistRanking, RankingMode } from '../../library/types.ts'
@@ -25,12 +26,14 @@ interface ArtistRowProps {
   photoUrl?: string
   /** 0 for the list's single Tab stop, -1 for every other row. */
   tabIndex: number
+  /** Marked inside the name, so a match is visible without changing what the link is called. */
+  query?: string
 }
 
 const countFormat = new Intl.NumberFormat()
 
 export function ArtistRow(props: ArtistRowProps) {
-  const { ranking, leaderCount, share, tied, dimRank, mode, sort, basePath, photoUrl, tabIndex } = props
+  const { ranking, leaderCount, share, tied, dimRank, mode, sort, basePath, photoUrl, tabIndex, query = '' } = props
   const { artist, rank, count, tracks } = ranking
   const detailsId = useId()
   const sample = tracks
@@ -54,14 +57,24 @@ export function ArtistRow(props: ArtistRowProps) {
         <Link
           to={artistPath(basePath)}
           params={{ artistId: artist.id }}
-          search={{ mode, sort }}
+          // The filter travels with the link, so the list behind the artist page is the one that was on screen.
+          search={(previous) => ({ ...previous, mode, sort, q: query === '' ? undefined : query })}
           // Lets the artist page's back link return through history, which restores the list's scroll position.
           state={(previous) => ({ ...previous, fromRanking: true })}
           tabIndex={tabIndex}
           aria-describedby={detailsId}
           className="block truncate text-base font-medium tracking-[-0.01em] text-text after:absolute after:inset-0 focus-visible:shadow-none"
         >
-          {artist.name}
+          {highlightParts(artist.name, query).map((part, index) =>
+            part.match ? (
+              // Keyed by position: the pieces are one name cut up, and they all change together when the query does.
+              <mark key={`${index}-${part.text}`} className="bg-soft-highlight text-highlight">
+                {part.text}
+              </mark>
+            ) : (
+              part.text
+            ),
+          )}
         </Link>
         <span aria-hidden className="mt-1 block truncate text-sm text-subtle">
           {sample}

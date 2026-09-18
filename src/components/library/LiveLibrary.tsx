@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, getRouteApi } from '@tanstack/react-router'
 import { useLibrary } from '../../hooks/useLibrary.ts'
 import { artistImageUrls } from '../../library/artist-images.ts'
@@ -31,64 +32,70 @@ export function LiveLibrary() {
   const { mode, sort } = route.useSearch()
   const saved = library.data ?? null
   const firstScan = !saved || (scan.status !== 'idle' && scan.kind === 'initial')
+  // A finished scan leaves ScanState as plain { status: 'idle' }, with no memory of having run, so remembering the
+  // skeleton is the only way to fade the ranking in on arrival rather than on every load with a library saved.
+  const [skeletonShown, setSkeletonShown] = useState(false)
+  if (firstScan && !skeletonShown) setSkeletonShown(true)
 
   if (!firstScan && saved) {
     // A refresh never empties the screen: the last ranking stays readable and usable while the new scan runs.
     const refreshing = scan.status === 'scanning'
     const refresh = () => void session.startScan('refresh')
     return (
-      <RankingView
-        library={saved}
-        mode={mode}
-        sort={sort}
-        basePath="/"
-        title="Your artist ranking"
-        notes={{ tracks: scannedNote(saved.fetchedAt), artists: tiesNote(rankArtists(saved.tracks, mode)) }}
-        photos={artistImageUrls(saved.tracks, photoUrls(details.data))}
-        stale={refreshing}
-        lead={
-          <>
-            {persistent === false && <StorageNote />}
-            {scan.status === 'scanning' && (
-              <ScanProgress read={scan.read} total={scan.total} estimateMs={scan.estimateMs} />
-            )}
-            {scan.status === 'interrupted' && (
-              <ScanStopped
-                scan={scan}
-                onResume={() => void session.resumeScan('refresh')}
-                onStartOver={refresh}
-              />
-            )}
-          </>
-        }
-        panelAction={
-          refreshing ? (
-            <button type="button" onClick={() => session.cancelScan()} className={panelButtonClass}>
-              Cancel
-            </button>
-          ) : (
-            <button type="button" onClick={refresh} className={panelButtonClass}>
-              Refresh
-            </button>
-          )
-        }
-        emptyState={
-          <div className="px-6.5 pt-16 pb-17.5 text-center">
-            <p className="text-lg font-semibold">No liked songs to rank</p>
-            <p className="mx-auto mt-2 max-w-100 text-base leading-[1.55] text-muted">
-              Your Spotify library has no saved tracks. Like a few songs, then refresh.
-            </p>
-            <div className="mt-5 flex flex-wrap justify-center gap-2.5">
-              <button type="button" onClick={refresh} className={primaryActionClass}>
+      <div className={skeletonShown ? 'animate-arrive' : undefined}>
+        <RankingView
+          library={saved}
+          mode={mode}
+          sort={sort}
+          basePath="/"
+          title="Your artist ranking"
+          notes={{ tracks: scannedNote(saved.fetchedAt), artists: tiesNote(rankArtists(saved.tracks, mode)) }}
+          photos={artistImageUrls(saved.tracks, photoUrls(details.data))}
+          stale={refreshing}
+          lead={
+            <>
+              {persistent === false && <StorageNote />}
+              {scan.status === 'scanning' && (
+                <ScanProgress read={scan.read} total={scan.total} estimateMs={scan.estimateMs} />
+              )}
+              {scan.status === 'interrupted' && (
+                <ScanStopped
+                  scan={scan}
+                  onResume={() => void session.resumeScan('refresh')}
+                  onStartOver={refresh}
+                />
+              )}
+            </>
+          }
+          panelAction={
+            refreshing ? (
+              <button type="button" onClick={() => session.cancelScan()} className={panelButtonClass}>
+                Cancel
+              </button>
+            ) : (
+              <button type="button" onClick={refresh} className={panelButtonClass}>
                 Refresh
               </button>
-              <Link to="/demo" className={softActionClass}>
-                See the demo
-              </Link>
+            )
+          }
+          emptyState={
+            <div className="px-6.5 pt-16 pb-17.5 text-center">
+              <p className="text-lg font-semibold">No liked songs to rank</p>
+              <p className="mx-auto mt-2 max-w-100 text-base leading-[1.55] text-muted">
+                Your Spotify library has no saved tracks. Like a few songs, then refresh.
+              </p>
+              <div className="mt-5 flex flex-wrap justify-center gap-2.5">
+                <button type="button" onClick={refresh} className={primaryActionClass}>
+                  Refresh
+                </button>
+                <Link to="/demo" className={softActionClass}>
+                  See the demo
+                </Link>
+              </div>
             </div>
-          </div>
-        }
-      />
+          }
+        />
+      </div>
     )
   }
 

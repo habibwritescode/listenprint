@@ -99,6 +99,14 @@
     }
   }
 
+  --animate-arrive: arrive var(--duration-morph) var(--ease-settled);
+
+  @keyframes arrive {
+    from {
+      opacity: 0;
+    }
+  }
+
   --animate-label-swap: label-swap var(--duration-fade) var(--ease-settled);
 
   @keyframes label-swap {

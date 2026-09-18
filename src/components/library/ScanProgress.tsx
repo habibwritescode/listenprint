@@ -31,7 +31,10 @@ export function ScanProgress({ read, total, estimateMs }: ScanProgressProps) {
         aria-valuenow={total === null ? undefined : read}
         className="mt-2.75 h-0.75 overflow-hidden rounded-full bg-raised-surface"
       >
-        <div className="h-full bg-accent transition-[width] duration-fade" style={{ width: `${percent}%` }} />
+        <div
+          className="h-full w-full origin-left bg-accent transition-transform duration-fade ease-linear"
+          style={{ transform: `scaleX(${percent / 100})` }}
+        />
       </div>
     </div>
   )

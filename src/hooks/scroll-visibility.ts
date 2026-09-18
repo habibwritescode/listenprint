@@ -22,10 +22,19 @@ export function isArrivalScroll(pageChanged: boolean, renderedAt: number | null,
 
 /**
  * The header after the first scroll that follows a page change. That scroll is the router resetting or restoring the
- * position, often thousands of pixels in one jump, not someone scrolling, so it only shows the header at the top.
+ * position, often thousands of pixels in one jump, not someone scrolling, so it never reads as scrolling up.
+ *
+ * `remembered` is the header this history entry had when it was last left, so Back to a list that was scrolled past
+ * the header returns it as it was rather than handing back a header the reader had already scrolled away.
  */
-export function headerHiddenAfterNavigation(hidden: boolean, currentY: number, headerHeight: number): boolean {
-  return currentY <= headerHeight ? false : hidden
+export function headerHiddenOnArrival(
+  remembered: boolean | undefined,
+  hidden: boolean,
+  currentY: number,
+  headerHeight: number,
+): boolean {
+  if (currentY <= headerHeight) return false
+  return remembered ?? hidden
 }
 
 export function headerHasBackground(scrollY: number): boolean {

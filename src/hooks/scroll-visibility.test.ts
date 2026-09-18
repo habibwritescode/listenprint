@@ -3,7 +3,7 @@ import {
   ARRIVAL_SETTLE_MS,
   SCROLL_TOLERANCE,
   headerHasBackground,
-  headerHiddenAfterNavigation,
+  headerHiddenOnArrival,
   isArrivalScroll,
   nextHeaderHidden,
   shouldShowBackToTop,
@@ -50,15 +50,22 @@ describe('isArrivalScroll', () => {
 })
 
 // Restoring a list's scroll position on Back is a jump, not someone scrolling, so it mustn't slide the header away.
-describe('headerHiddenAfterNavigation', () => {
-  it('keeps the header as it was when a page change scrolls far down', () => {
-    expect(headerHiddenAfterNavigation(false, 3_000, HEADER_HEIGHT)).toBe(false)
-    expect(headerHiddenAfterNavigation(true, 3_000, HEADER_HEIGHT)).toBe(true)
+describe('headerHiddenOnArrival', () => {
+  it('carries the header through a page change that scrolls far down', () => {
+    expect(headerHiddenOnArrival(undefined, false, 3_000, HEADER_HEIGHT)).toBe(false)
+    expect(headerHiddenOnArrival(undefined, true, 3_000, HEADER_HEIGHT)).toBe(true)
   })
 
   it('shows the header when a page change lands at the top', () => {
-    expect(headerHiddenAfterNavigation(true, 0, HEADER_HEIGHT)).toBe(false)
-    expect(headerHiddenAfterNavigation(true, HEADER_HEIGHT, HEADER_HEIGHT)).toBe(false)
+    expect(headerHiddenOnArrival(undefined, true, 0, HEADER_HEIGHT)).toBe(false)
+    expect(headerHiddenOnArrival(undefined, true, HEADER_HEIGHT, HEADER_HEIGHT)).toBe(false)
+    expect(headerHiddenOnArrival(true, true, 0, HEADER_HEIGHT)).toBe(false)
+  })
+
+  // Going back to a list you had scrolled past the header shouldn't hand the header back.
+  it('restores the header this entry was left with, whatever the page you came from had', () => {
+    expect(headerHiddenOnArrival(true, false, 3_400, HEADER_HEIGHT)).toBe(true)
+    expect(headerHiddenOnArrival(false, true, 3_400, HEADER_HEIGHT)).toBe(false)
   })
 })
 

@@ -25,7 +25,7 @@ export function BackToTopButton() {
           // Keyboard and screen reader users land at the top too, instead of on a button that just unmounted.
           document.getElementById('content')?.focus({ preventScroll: true })
         }}
-        className="fixed right-4 bottom-[calc(env(safe-area-inset-bottom)+46px)] z-20 flex size-11.5 items-center justify-center gap-2 rounded-full border border-border bg-raised-surface text-lg text-text shadow-[0_6px_20px_rgb(0_0_0/0.45)] transition-[opacity,border-color] duration-fade hover:border-accent starting:opacity-0 min-[741px]:h-9.5 min-[741px]:w-auto min-[741px]:px-3.5 min-[741px]:text-md"
+        className="fixed right-4 bottom-[calc(env(safe-area-inset-bottom)+46px)] z-20 flex size-11.5 items-center justify-center gap-2 rounded-full border border-border bg-raised-surface text-lg text-text shadow-[0_6px_20px_rgb(0_0_0/0.45)] transition-[opacity,translate,border-color] duration-fade ease-settled hover:border-accent starting:translate-y-1 starting:opacity-0 min-[741px]:h-9.5 min-[741px]:w-auto min-[741px]:px-3.5 min-[741px]:text-md"
       >
         <span aria-hidden>↑</span>
         <span className="max-[740px]:sr-only">Back to top</span>

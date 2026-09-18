@@ -60,6 +60,12 @@ export function RankingView(props: RankingViewProps) {
       </h1>
       {lead}
       <StatsSummary rankings={rankings} trackCount={library.tracks.length} notes={notes} />
+      <ExportActions
+        rankings={sortRankings(matches, sort)}
+        trackCount={library.tracks.length}
+        source={library.source}
+        filtered={query !== ''}
+      />
       <RankedArtistList
         rankings={sortRankings(matches, sort)}
         leaderCount={leaderCount}
@@ -85,12 +91,6 @@ export function RankingView(props: RankingViewProps) {
           )
         }
         label={stale ? `${label} · from your last scan` : label}
-      />
-      <ExportActions
-        rankings={sortRankings(matches, sort)}
-        trackCount={library.tracks.length}
-        source={library.source}
-        filtered={query !== ''}
       />
       {children}
     </section>

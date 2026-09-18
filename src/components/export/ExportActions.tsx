@@ -41,7 +41,10 @@ function imageStamp(now: Date, source: Library['source']): string {
   return source === 'demo' ? `${date} · SAMPLE LIBRARY` : date
 }
 
-/** Both exports of the ranked list, under it: a square image to share, and every row as a spreadsheet. */
+/**
+ * Both exports of the ranked list: a square image to share, and every row as a spreadsheet. It sits above the list,
+ * since a library of a thousand artists is tall enough that nothing below the rows is ever seen.
+ */
 export function ExportActions(props: ExportActionsProps) {
   const { rankings, trackCount, source, filtered, now = new Date(), download = downloadFile } = props
   const { createImage = renderSquare } = props
@@ -86,22 +89,18 @@ export function ExportActions(props: ExportActionsProps) {
   }
 
   return (
-    <section aria-labelledby="export-title" className="space-y-2.5 rounded-lg border border-border bg-surface p-4">
-      <h2 id="export-title" className="text-2xs tracking-[0.12em] text-subtle uppercase tabular-nums">
+    <section aria-labelledby="export-title" className="flex flex-wrap items-center gap-x-3 gap-y-2">
+      <h2 id="export-title" className="sr-only">
         Take it with you
       </h2>
-      <div className="flex flex-wrap items-center gap-2.5">
-        <button type="button" onClick={() => void downloadPng()} disabled={working} className={softActionClass}>
-          {working ? 'Preparing image…' : 'Download PNG'}
-        </button>
-        <button type="button" onClick={downloadCsv} className={ghostActionClass}>
-          Download CSV
-        </button>
-      </div>
-      <p className="text-sm text-muted">
-        {`The image shows your top 20; the spreadsheet holds ${scope}, with their counts, shares and first likes.`}
-      </p>
-      {error && <p className="text-sm text-highlight">{error}</p>}
+      <button type="button" onClick={() => void downloadPng()} disabled={working} className={softActionClass}>
+        {working ? 'Preparing image…' : 'Download PNG'}
+      </button>
+      <button type="button" onClick={downloadCsv} className={ghostActionClass}>
+        Download CSV
+      </button>
+      <p className="text-sm text-muted">{`Your top 20 as an image · ${scope} as a spreadsheet`}</p>
+      {error && <p className="basis-full text-sm text-highlight">{error}</p>}
     </section>
   )
 }

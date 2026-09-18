@@ -1,5 +1,5 @@
 const actionBase =
-  'inline-flex h-9.5 items-center justify-center rounded-md px-4.25 text-md transition-[color,background-color,border-color,transform] duration-fade ease-settled enabled:active:scale-[0.97] disabled:cursor-not-allowed disabled:border disabled:border-border disabled:bg-raised-surface disabled:font-normal disabled:text-subtle'
+  'inline-flex h-9.5 items-center justify-center rounded-md px-4.25 text-md transition-[color,background-color,border-color,transform] duration-[var(--duration-fade)] ease-settled enabled:active:scale-[0.97] disabled:cursor-not-allowed disabled:border disabled:border-border disabled:bg-raised-surface disabled:font-normal disabled:text-subtle'
 
 /** The one action a screen wants you to take. */
 export const primaryActionClass = `${actionBase} bg-accent font-semibold text-on-accent hover:bg-accent/85`

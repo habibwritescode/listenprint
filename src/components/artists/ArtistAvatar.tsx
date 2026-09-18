@@ -61,7 +61,7 @@ export function ArtistAvatar({ name, size = 'row', imageUrl = null, transitionNa
           data-state={photoState}
           onLoad={() => setResult({ url: imageUrl, state: 'loaded' })}
           onError={() => setResult({ url: imageUrl, state: 'failed' })}
-          className="absolute inset-0 size-full object-cover opacity-0 transition-opacity duration-fade data-[state=loaded]:opacity-100"
+          className="absolute inset-0 size-full object-cover opacity-0 transition-opacity duration-[var(--duration-fade)] data-[state=loaded]:opacity-100"
         />
       )}
     </span>

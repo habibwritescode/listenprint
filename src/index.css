@@ -81,6 +81,13 @@
   --ease-settled: cubic-bezier(0.2, 0.7, 0.3, 1);
   --duration-morph: 240ms;
   --duration-fade: 120ms;
+  /* Chrome that slides rather than fades: longer than a fade because it travels, shorter than a morph. */
+  --duration-chrome: 200ms;
+
+  /* Hovers and other un-suffixed transitions inherit the app's motion instead of Tailwind's 150ms ease-in-out. */
+  --default-transition-duration: var(--duration-fade);
+  --default-transition-timing-function: var(--ease-settled);
+
   --animate-shimmer: shimmer 1.25s linear infinite;
 
   @keyframes shimmer {

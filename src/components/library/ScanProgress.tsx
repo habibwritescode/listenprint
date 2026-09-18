@@ -32,7 +32,7 @@ export function ScanProgress({ read, total, estimateMs }: ScanProgressProps) {
         className="mt-2.75 h-0.75 overflow-hidden rounded-full bg-raised-surface"
       >
         <div
-          className="h-full w-full origin-left bg-accent transition-transform duration-fade ease-linear"
+          className="h-full w-full origin-left bg-accent transition-transform duration-[var(--duration-fade)] ease-linear"
           style={{ transform: `scaleX(${percent / 100})` }}
         />
       </div>

@@ -27,8 +27,9 @@ function field() {
   return screen.getByRole('searchbox', { name: 'Search artists' })
 }
 
+/** The list panel's own heading, which the export row below the list would otherwise make ambiguous. */
 function panelHeading() {
-  return screen.getByRole('heading', { level: 2 }).textContent
+  return screen.getAllByRole('heading', { level: 2 })[0].textContent
 }
 
 describe('searching the demo ranking', () => {

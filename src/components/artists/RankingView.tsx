@@ -6,6 +6,7 @@ import type { SortOrder } from '../../library/presentation.ts'
 import { rankArtists } from '../../library/rankings.ts'
 import { filterArtists } from '../../library/search.ts'
 import type { Library, RankingMode } from '../../library/types.ts'
+import { ExportActions } from '../export/ExportActions.tsx'
 import { NoSearchResults } from './NoSearchResults.tsx'
 import { RankedArtistList } from './RankedArtistList.tsx'
 import { StatsSummary } from './StatsSummary.tsx'
@@ -84,6 +85,12 @@ export function RankingView(props: RankingViewProps) {
           )
         }
         label={stale ? `${label} · from your last scan` : label}
+      />
+      <ExportActions
+        rankings={sortRankings(matches, sort)}
+        trackCount={library.tracks.length}
+        source={library.source}
+        filtered={query !== ''}
       />
       {children}
     </section>

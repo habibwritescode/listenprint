@@ -2,10 +2,37 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="preload" href="/fonts/archivo-latin-var.woff2" as="font" type="font/woff2" crossorigin />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Listenprint</title>
+
+    <title>listenprint — who you actually save</title>
+    <meta
+      name="description"
+      content="Your Spotify Liked Songs, ranked by the artists you save most. Read in your browser and never uploaded, with a sample library that needs no account."
+    />
+    <link rel="canonical" href="https://listenprint.vercel.app/" />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <!-- The page is dark at every size, so the browser chrome should be too rather than flashing white on load. -->
+    <meta name="theme-color" content="#0b0b10" />
+    <meta name="color-scheme" content="dark" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="listenprint" />
+    <meta property="og:title" content="listenprint — who you actually save" />
+    <meta
+      property="og:description"
+      content="Your Spotify Liked Songs, ranked by the artists you save most. Read in your browser and never uploaded."
+    />
+    <meta property="og:url" content="https://listenprint.vercel.app/" />
+    <meta property="og:image" content="https://listenprint.vercel.app/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="listenprint: a ranked list of the artists you save most" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="preload" href="/fonts/archivo-latin-var.woff2" as="font" type="font/woff2" crossorigin />
   </head>
   <body>
     <div id="root"></div>

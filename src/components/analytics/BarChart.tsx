@@ -160,13 +160,13 @@ export function BarChart({ label, layout, bars, valueSuffix }: BarChartProps) {
                   }`}
                 />
               </button>
-              {shown === index && !columns && (
-                <Readout bar={bar} valueSuffix={valueSuffix} columns={false} barPercent={0} edge="middle" />
-              )}
             </li>
           )
         })}
       </ul>
+      {!columns && bars.length > 0 && (
+        <Readout bar={bars[shown]} valueSuffix={valueSuffix} columns={false} barPercent={0} edge="middle" />
+      )}
       {columns && (
         <div aria-hidden className="mt-2 flex gap-px">
           {bars.map((bar) =>

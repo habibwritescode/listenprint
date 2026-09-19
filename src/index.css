@@ -122,6 +122,38 @@
     color-scheme: dark;
   }
 
+  html {
+    /* The browser's own grey flash on tap fights the press feedback the buttons already give. */
+    -webkit-tap-highlight-color: transparent;
+    /* No font inflation when a phone is turned to landscape. */
+    -webkit-text-size-adjust: 100%;
+    /* The library has its own Refresh; a pull at the top of a list should not reload the page. */
+    overscroll-behavior: none;
+  }
+
+  /*
+   * iOS zooms the page when focus lands on an input under 16px and never zooms back out. Only where the pointer
+   * is coarse: the field is 13px by design everywhere a mouse is used.
+   */
+  @media (pointer: coarse) {
+    input {
+      font-size: 16px;
+    }
+  }
+
+  /*
+   * Controls, not content. `manipulation` drops the double-tap-zoom wait so a tap registers on contact, and a
+   * long press on a control should not select its label. Links are left alone — their text is the artist's name
+   * and their callout is worth keeping.
+   */
+  button,
+  [role='button'] {
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+
   body {
     min-height: 100svh;
     background: var(--color-background);

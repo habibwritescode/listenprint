@@ -109,6 +109,14 @@ export function BarChart({ label, layout, bars, valueSuffix }: BarChartProps) {
         ref={listRef}
         aria-label={label}
         onKeyDown={onKeyDown}
+        /*
+         * On the list, not on each bar. Leaving one bar for the next passed through a moment with nothing selected,
+         * which fell back to the peak, so its readout flashed on every bar crossed.
+         */
+        onMouseLeave={() => setSelectedIndex(null)}
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget)) setSelectedIndex(null)
+        }}
         className={columns ? 'flex h-60 items-end gap-px' : 'space-y-3.5'}
       >
         {bars.map((bar, index) => {
@@ -133,9 +141,7 @@ export function BarChart({ label, layout, bars, valueSuffix }: BarChartProps) {
                   setActiveIndex(index)
                   setSelectedIndex(index)
                 }}
-                onBlur={() => setSelectedIndex(null)}
                 onMouseEnter={() => setSelectedIndex(index)}
-                onMouseLeave={() => setSelectedIndex(null)}
                 className={columns ? 'flex h-full w-full items-end rounded-sm' : 'block w-full rounded-sm text-left'}
               >
                 {!columns && (
